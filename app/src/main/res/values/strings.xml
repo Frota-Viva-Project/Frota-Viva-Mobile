@@ -14,4 +14,6 @@
     <string name="account_question">Ainda não tem uma conta?</string>
     <string name="account_login_register">Cadastre-se</string>
     <string name="driver_register">Cadastro Caminhoneiro</string>
+    <string name="button_continue">Continuar</string>
+    <string name="button_goBack">Voltar</string>
 </resources>
