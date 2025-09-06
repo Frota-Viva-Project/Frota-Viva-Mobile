@@ -2,7 +2,7 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.FrotaVivaMobile" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/secondary_default</item>
-        <item name="android:fontFamily">@font/Inter_Regular</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
     </style>
 
     <style name="Theme.FrotaVivaMobile" parent="Base.Theme.FrotaVivaMobile" />
