@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">Frota Viva - Mobile</string>
+    <string name="logo_content_description">Logo de caminhao azul</string>
+    <string name="login_title">Realize o login</string>
+    <string name="email_input">Email</string>
+    <string name="name_input">Nome</string>
+    <string name="birthday_input">Data de Nascimento</string>
+    <string name="car_plate_input">Placa do Carro</string>
+    <string name="enterprise_code_input">Código da Empresa</string>
+    <string name="password_input">Senha</string>
+    <string name="confirm_password_input">Confirmar Senha</string>
+    <string name="acessar_button">Acessar</string>
+    <string name="login_button">Login</string>
+    <string name="account_question">Ainda não tem uma conta?</string>
+    <string name="account_login_register">Cadastre-se</string>
+    <string name="driver_register">Cadastro Caminhoneiro</string>
 </resources>
