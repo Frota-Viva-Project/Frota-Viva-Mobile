@@ -222,9 +222,6 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-<<<<<<< Updated upstream
-</androidx.constraintlayout.widget.ConstraintLayout>
-=======
     <include
         android:id="@+id/navbarInclude"
         layout="@layout/navbar"
@@ -233,4 +230,3 @@
         android:layout_gravity="bottom" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
->>>>>>> Stashed changes

@@ -16,4 +16,8 @@
     <string name="driver_register">Cadastro Caminhoneiro</string>
     <string name="button_continue">Continuar</string>
     <string name="button_goBack">Voltar</string>
+    <string name="collaborator_display">Colaborador:</string>
+    <string name="car_display">Carro:</string>
+    <string name="car_plate_display">Placa:</string>
+    <string name="loading_display">Carregando..</string>
 </resources>
