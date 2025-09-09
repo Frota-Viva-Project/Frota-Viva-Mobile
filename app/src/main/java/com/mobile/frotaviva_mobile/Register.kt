@@ -20,13 +20,13 @@ class Register : AppCompatActivity() {
         val intent = Intent(this,RegisterPassword::class.java);
         val bundle = Bundle()
 
-        binding.buttonNavigateLogin.setOnClickListener {
+        binding.buttonContinueRegister.setOnClickListener {
             startActivity(Intent(this, Login::class.java))
         }
 
-        binding.buttonContinue.setOnClickListener {
-            bundle.putString("name", binding.editTextName.text.toString())
-            bundle.putString("email", binding.editTextEmail.text.toString())
+        binding.buttonContinueRegister.setOnClickListener {
+            bundle.putString("name", binding.editTextNameRegister.text.toString())
+            bundle.putString("email", binding.editTextEmailRegister.text.toString())
             bundle.putString("phone", binding.editTextPhone.text.toString())
             bundle.putString("car_plate", binding.editTextCarPlate.text.toString())
             bundle.putString("enterprise_code", binding.editTextEnterprisrCode.text.toString())

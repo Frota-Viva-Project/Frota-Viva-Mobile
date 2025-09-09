@@ -37,8 +37,8 @@ class Login : AppCompatActivity() {
 
 
         binding.buttonLogin.setOnClickListener {
-            val email = binding.editTextEmail.text.toString()
-            val password = binding.editTextPassword.text.toString()
+            val email = binding.editTextEmailLogin.text.toString()
+            val password = binding.editTextPasswordLogin.text.toString()
 
             loginUser(email, password)
         }

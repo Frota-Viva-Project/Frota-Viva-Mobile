@@ -39,9 +39,9 @@ class RegisterPassword : AppCompatActivity() {
             startActivity(Intent(this, Register::class.java))
         }
 
-        binding.buttonRegister.setOnClickListener {
-            val password = binding.editTextPassword.text.toString()
-            if (password == binding.editTextConfirmPassword.text.toString()) {
+        binding.buttonContinueRegister.setOnClickListener {
+            val password = binding.editTextNameRegister.text.toString()
+            if (password == binding.editTextEmailRegister.text.toString()) {
                 registerUser(name, email, phone, carPlate, enterpriseCode, password)
             }
         }
@@ -60,7 +60,7 @@ class RegisterPassword : AppCompatActivity() {
                     "carPlate" to carPlate,
                     "enterpriseCode" to enterpriseCode
                 )
-                Firebase.firestore.collection("drivers").document(uid)
+                Firebase.firestore.collection("driver").document(uid)
                     .set(user)
                     .addOnSuccessListener {
                         Toast.makeText(this, "User data saved", Toast.LENGTH_SHORT).show()
