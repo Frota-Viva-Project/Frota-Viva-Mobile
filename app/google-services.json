@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "213415155929",
+    "project_id": "frota-viva-project",
+    "storage_bucket": "frota-viva-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:213415155929:android:adbbc7284b15a83e03c6c8",
+        "android_client_info": {
+          "package_name": "com.mobile.frotaviva_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDj2cIEgj_IyHSlkWzEiTWy7fuebGYW1RY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
