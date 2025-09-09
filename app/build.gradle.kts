@@ -8,6 +8,10 @@ android {
     namespace = "com.mobile.frotaviva_mobile"
     compileSdk = 36
 
+    viewBinding {
+        enable = true
+    }
+
     defaultConfig {
         applicationId = "com.mobile.frotaviva_mobile"
         minSdk = 33
@@ -43,8 +47,12 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.firebase.auth.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("com.google.firebase:firebase-auth:24.0.1")
     implementation(platform("com.google.firebase:firebase-bom:34.2.0"))
+    implementation("com.github.bumptech.glide:glide:5.0.4")
+    implementation("com.google.firebase:firebase-firestore-ktx:24.9.1")
 }
