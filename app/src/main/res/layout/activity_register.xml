@@ -33,7 +33,7 @@
         app:layout_constraintTop_toBottomOf="@id/logo_azul" />
 
     <EditText
-        android:id="@+id/editTextEmail"
+        android:id="@+id/editTextNameRegister"
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginHorizontal="52dp"
@@ -41,7 +41,7 @@
         android:autofillHints="@string/app_name"
         android:background="@drawable/rounded_edittext_background"
         android:hint="@string/name_input"
-        android:inputType="textEmailAddress"
+        android:inputType="text"
         android:paddingStart="16dp"
         android:paddingTop="16dp"
         android:paddingEnd="16dp"
@@ -54,7 +54,7 @@
         app:layout_constraintTop_toBottomOf="@id/textView" />
 
     <EditText
-        android:id="@+id/editTextPassword"
+        android:id="@+id/editTextEmailRegister"
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginHorizontal="52dp"
@@ -62,7 +62,7 @@
         android:autofillHints="@string/app_name"
         android:background="@drawable/rounded_edittext_background"
         android:hint="@string/email_input"
-        android:inputType="textPassword"
+        android:inputType="text|textEmailAddress"
         android:paddingStart="16dp"
         android:paddingTop="16dp"
         android:paddingEnd="16dp"
@@ -72,18 +72,18 @@
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/editTextEmail" />
+        app:layout_constraintTop_toBottomOf="@id/editTextNameRegister" />
 
     <EditText
-        android:id="@+id/editTextPassword3"
+        android:id="@+id/editTextPhone"
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginHorizontal="52dp"
         android:layout_marginTop="24dp"
         android:autofillHints="@string/app_name"
         android:background="@drawable/rounded_edittext_background"
-        android:hint="@string/birthday_input"
-        android:inputType="textPassword"
+        android:hint="Telefone"
+        android:inputType="text"
         android:paddingStart="16dp"
         android:paddingTop="16dp"
         android:paddingEnd="16dp"
@@ -93,10 +93,10 @@
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextPassword" />
+        app:layout_constraintTop_toBottomOf="@+id/editTextEmailRegister" />
 
     <EditText
-        android:id="@+id/editTextPassword5"
+        android:id="@+id/editTextEnterprisrCode"
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginHorizontal="52dp"
@@ -104,7 +104,7 @@
         android:autofillHints="@string/app_name"
         android:background="@drawable/rounded_edittext_background"
         android:hint="@string/enterprise_code_input"
-        android:inputType="textPassword"
+        android:inputType="text"
         android:paddingStart="16dp"
         android:paddingTop="16dp"
         android:paddingEnd="16dp"
@@ -114,10 +114,10 @@
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextPassword6" />
+        app:layout_constraintTop_toBottomOf="@+id/editTextCarPlate" />
 
     <EditText
-        android:id="@+id/editTextPassword6"
+        android:id="@+id/editTextCarPlate"
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginHorizontal="52dp"
@@ -125,7 +125,7 @@
         android:autofillHints="@string/app_name"
         android:background="@drawable/rounded_edittext_background"
         android:hint="@string/car_plate_input"
-        android:inputType="textPassword"
+        android:inputType="text"
         android:paddingStart="16dp"
         android:paddingTop="16dp"
         android:paddingEnd="16dp"
@@ -135,10 +135,10 @@
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextPassword3" />
+        app:layout_constraintTop_toBottomOf="@+id/editTextPhone" />
 
     <Button
-        android:id="@+id/buttonContinue"
+        android:id="@+id/buttonContinueRegister"
         android:layout_width="124dp"
         android:layout_height="40dp"
         android:layout_marginHorizontal="52dp"
@@ -152,10 +152,10 @@
         android:textStyle="bold"
         app:backgroundTint="@null"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextPassword5" />
+        app:layout_constraintTop_toBottomOf="@+id/editTextEnterprisrCode" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonNavigateLogin"
+        android:id="@+id/buttonGoBack"
         android:layout_width="100dp"
         android:layout_height="40dp"
         android:layout_marginHorizontal="52dp"
@@ -169,8 +169,8 @@
         android:textSize="14sp"
         android:textStyle="bold"
         app:backgroundTint="@null"
-        app:layout_constraintEnd_toStartOf="@+id/buttonContinue"
-        app:layout_constraintTop_toBottomOf="@+id/editTextPassword5" />
+        app:layout_constraintEnd_toStartOf="@+id/buttonContinueRegister"
+        app:layout_constraintTop_toBottomOf="@+id/editTextEnterprisrCode" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
