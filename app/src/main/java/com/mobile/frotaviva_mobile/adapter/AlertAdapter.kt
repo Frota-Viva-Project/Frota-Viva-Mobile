@@ -12,8 +12,8 @@ class AlertAdapter(private val items: List<Alert>) :
     RecyclerView.Adapter<AlertAdapter.AlertViewHolder>() {
 
     class AlertViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvTitulo: TextView = itemView.findViewById(R.id.tvTitulo)
-        val tvDescricao: TextView = itemView.findViewById(R.id.tvDescricao)
+        val tvTitulo: TextView = itemView.findViewById(R.id.manTitulo)
+        val tvDescricao: TextView = itemView.findViewById(R.id.manInfo)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlertViewHolder {

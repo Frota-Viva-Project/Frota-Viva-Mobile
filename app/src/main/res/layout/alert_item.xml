@@ -28,7 +28,7 @@
             app:srcCompat="@drawable/warning" />
 
         <TextView
-            android:id="@+id/tvTitulo"
+            android:id="@+id/manTitulo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -41,7 +41,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/tvDescricao"
+            android:id="@+id/manInfo"
             android:layout_width="174dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -53,7 +53,7 @@
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@+id/imageView5"
-            app:layout_constraintTop_toBottomOf="@+id/tvTitulo" />
+            app:layout_constraintTop_toBottomOf="@+id/manTitulo" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/buttonFix"
