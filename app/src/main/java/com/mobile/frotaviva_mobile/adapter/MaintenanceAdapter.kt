@@ -20,7 +20,7 @@ class MaintenanceAdapter (private val items: List<Maintenance>)  :
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MaintenanceViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.alert_item, parent, false)
+            .inflate(R.layout.maintenance_item, parent, false)
         return MaintenanceViewHolder(view)
     }
 

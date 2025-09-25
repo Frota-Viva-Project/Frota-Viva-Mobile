@@ -32,25 +32,25 @@ class Maintenances : AppCompatActivity() {
         val fakeMaintenanceData = listOf(
             Maintenance(
                 titulo = "Oil Change",
-                info = "Routine maintenance. Oil and oil filter were replaced.",
+                info = "Routine maintenance. Oil",
                 dataOcorrido = createDate(2025, 9, 20, 10, 30),
                 status = "Completed"
             ),
             Maintenance(
                 titulo = "Electrical System Problem",
-                info = "Left headlight is not working. Wiring needs to be checked.",
+                info = "Left headlight is not working.",
                 dataOcorrido = createDate(2025, 9, 23, 15, 0),
                 status = "In Progress"
             ),
             Maintenance(
                 titulo = "Brake Repair",
-                info = "Rear brake pads need to be replaced.",
+                info = "Rear brake pads ",
                 dataOcorrido = createDate(2025, 9, 24, 9, 0),
                 status = "Pending"
             ),
             Maintenance(
                 titulo = "Engine Noise",
-                info = "Strange noise detected when starting the engine. Inspection scheduled for diagnosis.",
+                info = "Strange noise detected",
                 dataOcorrido = createDate(2025, 9, 25, 11, 0),
                 status = "Pending"
             )
