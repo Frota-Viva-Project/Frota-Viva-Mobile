@@ -13,8 +13,9 @@
         android:theme="@style/Theme.FrotaVivaMobile"
         tools:targetApi="31">
         <activity
-            android:name=".Maintenances"
-            android:exported="true">
+            android:name=".SplashScreen"
+            android:exported="true"
+            android:theme="@style/Theme.Design.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -23,6 +24,10 @@
         </activity>
         <activity
             android:name=".Alerts"
+            android:exported="false">
+        </activity>
+        <activity
+            android:name=".Maintenances"
             android:exported="false">
         </activity>
         <activity
