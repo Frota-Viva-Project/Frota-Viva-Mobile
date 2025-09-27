@@ -3,10 +3,7 @@ package com.mobile.frotaviva_mobile
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
@@ -19,16 +16,12 @@ class RegisterPassword : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityRegisterPasswordBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
 
-        val receivedBundle = intent.extras
+        firebaseManager = FirebaseManager()
+
+            val receivedBundle = intent.extras
         val name = receivedBundle?.getString("name") ?: ""
         val email = receivedBundle?.getString("email") ?: ""
         val phone = receivedBundle?.getString("phone") ?: ""
@@ -36,49 +29,80 @@ class RegisterPassword : AppCompatActivity() {
         val enterpriseCode = receivedBundle?.getString("enterprise_code") ?: ""
 
         binding.buttonGoBack.setOnClickListener {
-            startActivity(Intent(this, Register::class.java))
+            finish()
         }
 
         binding.buttonContinueRegister.setOnClickListener {
-            val password = binding.editTextNameRegister.text.toString()
-            if (password == binding.editTextEmailRegister.text.toString()) {
-                registerUser(name, email, phone, carPlate, enterpriseCode, password)
+            val password = binding.editTextPasswordRegister.text.toString()
+            val confirmPassword = binding.editTextConfirmPasswordRegister.text.toString()
+
+            if (password.isEmpty() || confirmPassword.isEmpty()) {
+                Toast.makeText(this, "Preencha a senha e a confirmação.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+
+            if (password != confirmPassword) {
+                Toast.makeText(this, "As senhas não coincidem.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            registerUser(name, email, phone, carPlate, enterpriseCode, password)
         }
     }
 
     private fun registerUser(name: String, email: String, phone: String, carPlate: String, enterpriseCode: String, password: String) {
-        firebaseManager.registerUser(email, password, onSuccess = {
-            Toast.makeText(this, "Success register user", Toast.LENGTH_SHORT).show()
-            updateProfile(name)
-            val uid = Firebase.auth.currentUser?.uid
-            if (uid != null) {
-                val user = hashMapOf(
-                    "name" to name,
-                    "email" to email,
-                    "phone" to phone,
-                    "carPlate" to carPlate,
-                    "enterpriseCode" to enterpriseCode
-                )
-                Firebase.firestore.collection("driver").document(uid)
-                    .set(user)
-                    .addOnSuccessListener {
-                        Toast.makeText(this, "User data saved", Toast.LENGTH_SHORT).show()
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Failed to save user data", Toast.LENGTH_SHORT).show()
-                    }
+        firebaseManager.registerUser(email, password,
+            onSuccess = {
+                updateProfileAndSaveData(name, email, phone, carPlate, enterpriseCode)
+            },
+            onFailure = {
+                Toast.makeText(this, "Falha no cadastro: Usuário já existe ou senha fraca.", Toast.LENGTH_LONG).show()
             }
-        }, onFailure = {
-            Toast.makeText(this, "Failed register user", Toast.LENGTH_SHORT).show()
-        })
+        )
     }
 
-    private fun updateProfile(name: String) {
-        firebaseManager.updateUserProfile(name, onSuccess = {
-            finish()
-        }, onFailure = {
-            Toast.makeText(this, "Failed update user profile", Toast.LENGTH_SHORT).show()
-        })
+    private fun updateProfileAndSaveData(name: String, email: String, phone: String, carPlate: String, enterpriseCode: String) {
+        firebaseManager.updateUserProfile(name,
+            onSuccess = {
+                saveUserData(name, email, phone, carPlate, enterpriseCode)
+            },
+            onFailure = {
+                Toast.makeText(this, "Erro ao salvar nome de perfil.", Toast.LENGTH_SHORT).show()
+                saveUserData(name, email, phone, carPlate, enterpriseCode)
+            }
+        )
+    }
+
+    private fun saveUserData(name: String, email: String, phone: String, carPlate: String, enterpriseCode: String) {
+        val uid = Firebase.auth.currentUser?.uid
+
+        if (uid != null) {
+            val user = hashMapOf(
+                "name" to name,
+                "email" to email,
+                "phone" to phone,
+                "carPlate" to carPlate,
+                "enterpriseCode" to enterpriseCode
+            )
+            Firebase.firestore.collection("driver").document(uid)
+                .set(user)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Cadastro concluído com sucesso!", Toast.LENGTH_LONG).show()
+                    // 3. Redireciona para a tela principal
+                    redirectToMain()
+                }
+                .addOnFailureListener {
+                    Toast.makeText(this, "Erro ao salvar dados do motorista.", Toast.LENGTH_LONG).show()
+                }
+        } else {
+            Toast.makeText(this, "Erro: UID do usuário ausente.", Toast.LENGTH_LONG).show()
+        }
+    }
+    private fun redirectToMain() {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
     }
 }
