@@ -2,44 +2,57 @@ package com.mobile.frotaviva_mobile
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.mobile.frotaviva_mobile.databinding.ActivityRegisterBinding
 
 class Register : AppCompatActivity() {
     private lateinit var binding: ActivityRegisterBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        binding = ActivityRegisterBinding.inflate(layoutInflater)
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_register)
-
-        val intent = Intent(this,RegisterPassword::class.java);
-        val bundle = Bundle()
+        binding = ActivityRegisterBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         binding.buttonContinueRegister.setOnClickListener {
-            startActivity(Intent(this, Login::class.java))
+            if (!validateInputs()) {
+                Toast.makeText(this, "Preencha todos os campos para continuar.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            navigateToRegisterPassword()
         }
 
-        binding.buttonContinueRegister.setOnClickListener {
-            bundle.putString("name", binding.editTextNameRegister.text.toString())
-            bundle.putString("email", binding.editTextEmailRegister.text.toString())
-            bundle.putString("phone", binding.editTextPhone.text.toString())
-            bundle.putString("car_plate", binding.editTextCarPlate.text.toString())
-            bundle.putString("enterprise_code", binding.editTextEnterprisrCode.text.toString())
-
-            intent.putExtras(bundle)
-
+        binding.buttonGoBack.setOnClickListener {
+            val intent = Intent(this, Login::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
             startActivity(intent)
+            finish()
+        }
+    }
+
+    private fun validateInputs(): Boolean {
+        return with(binding) {
+            editTextNameRegister.text.isNotBlank() &&
+                    editTextEmailRegister.text.isNotBlank() &&
+                    editTextPhone.text.isNotBlank() &&
+                    editTextCarPlate.text.isNotBlank() &&
+                    editTextEnterpriseCode.text.isNotBlank()
+        }
+    }
+
+    private fun navigateToRegisterPassword() {
+        val intent = Intent(this, RegisterPassword::class.java)
+
+        val bundle = Bundle().apply {
+            putString("name", binding.editTextNameRegister.text.toString().trim())
+            putString("email", binding.editTextEmailRegister.text.toString().trim())
+            putString("phone", binding.editTextPhone.text.toString().trim())
+            putString("car_plate", binding.editTextCarPlate.text.toString().trim())
+            putString("enterprise_code", binding.editTextEnterpriseCode.text.toString().trim())
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        intent.putExtras(bundle)
+        startActivity(intent)
     }
 }

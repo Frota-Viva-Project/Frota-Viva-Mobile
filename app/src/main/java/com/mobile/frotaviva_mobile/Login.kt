@@ -3,10 +3,8 @@ package com.mobile.frotaviva_mobile
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.mobile.frotaviva_mobile.databinding.ActivityLoginBinding
@@ -19,56 +17,55 @@ class Login : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
-        enableEdgeToEdge()
         setContentView(binding.root)
+
         firebaseManager = FirebaseManager()
+        FirebaseApp.initializeApp(this)
 
-        if(firebaseManager.isUserLoggedIn()) {
 
-        }
 
         binding.navigateToRegister.setOnClickListener {
+            // Navega para a tela de cadastro
             startActivity(Intent(this, Register::class.java))
         }
-
-        binding.navigateToRegister2.setOnClickListener {
-            startActivity(Intent(this, Register::class.java))
-        }
-
 
         binding.buttonLogin.setOnClickListener {
-            val email = binding.editTextEmailLogin.text.toString()
+            val email = binding.editTextEmailLogin.text.toString().trim()
             val password = binding.editTextPasswordLogin.text.toString()
 
-            loginUser(email, password)
-        }
+            if (email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Preencha e-mail e senha.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+            loginUser(email, password)
         }
     }
 
     private fun loginUser(email: String, password: String) {
-        firebaseManager.loginUser(email, password, onSuccess = {
-            redirectToMain()
-        }, onFailure = { exception ->
-            handleLoginError(exception)
-        })
+        firebaseManager.loginUser(email, password,
+            onSuccess = {
+                redirectToMain()
+            },
+            onFailure = { exception ->
+                handleLoginError(exception)
+            }
+        )
     }
 
     private fun redirectToMain() {
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
     }
 
     private fun handleLoginError(exception: Exception?) {
-        val message = when (exception) {
-            is FirebaseAuthInvalidUserException -> "Invalid user"
-            is FirebaseAuthInvalidCredentialsException -> "Invalid credentials"
-            else -> exception?.localizedMessage ?: "Unknown error"
+        val errorMessage = when (exception) {
+            is FirebaseAuthInvalidUserException -> "Usuário não encontrado. Verifique seu e-mail."
+            is FirebaseAuthInvalidCredentialsException -> "Senha incorreta."
+            else -> exception?.localizedMessage ?: "Erro desconhecido. Tente novamente."
         }
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
     }
 }
