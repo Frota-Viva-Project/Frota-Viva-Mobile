@@ -24,7 +24,7 @@ class SplashScreen : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(mainView) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets // Retorna o objeto insets
+            insets
         }
 
         Glide.with(this)
@@ -32,9 +32,9 @@ class SplashScreen : AppCompatActivity() {
             .into(splashImageView)
 
         Handler(Looper.getMainLooper()).postDelayed({
-            val intent = Intent(this, MainActivity::class.java)
+            val intent = Intent(this, Login::class.java)
             startActivity(intent)
             finish()
-        }, 6000)
+        }, 8000)
     }
 }
