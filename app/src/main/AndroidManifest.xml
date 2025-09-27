@@ -8,29 +8,32 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.FrotaVivaMobile"
         tools:targetApi="31">
         <activity
+            android:name=".Alerts"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".MainActivity"
-            android:exported="true"
-        />
+            android:exported="false" />
         <activity
             android:name=".RegisterPassword"
             android:exported="false" />
         <activity
             android:name=".Register"
-            android:exported="true" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            android:exported="false">
         </activity>
         <activity
             android:name=".Login"
-            android:exported="true">
-        </activity>
+            android:exported="false" />
     </application>
 
 </manifest>

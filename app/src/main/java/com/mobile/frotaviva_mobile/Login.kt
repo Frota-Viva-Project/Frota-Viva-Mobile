@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -40,6 +42,8 @@ class Login : AppCompatActivity() {
 
             loginUser(email, password)
         }
+
+        FirebaseApp.initializeApp(this)
     }
 
     private fun loginUser(email: String, password: String) {

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Frota Viva - Mobile</string>
+    <string name="app_name">Frota Viva</string>
     <string name="logo_content_description">Logo de caminhao azul</string>
     <string name="login_title">Realize o login</string>
     <string name="email_input">Email</string>
