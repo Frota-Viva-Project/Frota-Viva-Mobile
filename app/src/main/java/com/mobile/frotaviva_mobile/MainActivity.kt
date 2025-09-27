@@ -17,8 +17,4 @@ class MainActivity : AppCompatActivity() {
             insets
         }
     }
-
-    override fun setFinishOnTouchOutside(finish: Boolean) {
-        super.setFinishOnTouchOutside(finish)
-    }
 }
