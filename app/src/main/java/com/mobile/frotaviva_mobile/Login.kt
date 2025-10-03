@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.FirebaseApp
@@ -17,6 +18,7 @@ class Login : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -24,7 +26,10 @@ class Login : AppCompatActivity() {
         firebaseManager = FirebaseManager()
         FirebaseApp.initializeApp(this)
 
-
+        if (firebaseManager.isUserLoggedIn()) {
+            redirectToMain()
+            return
+        }
 
         binding.navigateToRegister.setOnClickListener {
             // Navega para a tela de cadastro

@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_avisos"
+        android:icon="@drawable/group_1"
+        android:title="Avisos" />
+
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/home_page"
+        android:title="Home" />
+
+    <item
+        android:id="@+id/nav_manutencoes"
+        android:icon="@drawable/gears"
+        android:title="Manutenção" />
+</menu>

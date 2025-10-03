@@ -20,4 +20,6 @@
     <string name="car_display">Carro:</string>
     <string name="car_plate_display">Placa:</string>
     <string name="loading_display">Carregando..</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
