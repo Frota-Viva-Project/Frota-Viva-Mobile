@@ -6,14 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
-// O nome desta classe é gerado a partir do seu XML: fragment_home.xml -> FragmentHomeBinding
 
-// Renomeado para HomeFragment para consistência
 class HomeFragment : Fragment() {
-
-    // 1. Setup do View Binding
     private var _binding: FragmentHomeBinding? = null
-    // Propriedade para acessar o binding de forma segura
     private val binding get() = _binding!!
 
     override fun onCreateView(
