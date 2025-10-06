@@ -23,11 +23,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Alerts"
+            android:name=".AlertsFragment"
             android:exported="false">
         </activity>
         <activity
-            android:name=".Maintenances"
+            android:name=".MaintenancesFragment"
             android:exported="false">
         </activity>
         <activity
