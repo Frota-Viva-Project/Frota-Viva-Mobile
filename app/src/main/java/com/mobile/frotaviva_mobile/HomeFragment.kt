@@ -1,26 +1,30 @@
 package com.mobile.frotaviva_mobile.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
-// O nome desta classe é gerado a partir do seu XML: fragment_home.xml -> FragmentHomeBinding
+import kotlinx.coroutines.launch
 
-// Renomeado para HomeFragment para consistência
 class HomeFragment : Fragment() {
 
-    // 1. Setup do View Binding
     private var _binding: FragmentHomeBinding? = null
-    // Propriedade para acessar o binding de forma segura
     private val binding get() = _binding!!
+
+    companion object {
+        const val TRUCK_ID_KEY = "truck_id"
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // 2. Infla o layout usando View Binding
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -28,23 +32,52 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Coloque aqui a lógica para buscar e exibir os dados
-        // (ex: buscar nome do motorista, placa do Firebase, carregar rotas)
+        val truckId = arguments?.getInt(TRUCK_ID_KEY)
 
-        // Exemplo: Atualizando dados do motorista
-        // binding.textView5.text = "Nome do Motorista Aqui"
-        // binding.textView8.text = "XXX-0000"
-
-        // *****************************************************************
-        // Se você usou o código da MainActivity original,
-        // a lógica de carregamento dos dados de perfil deve vir para cá.
-        // *****************************************************************
+        if (truckId != null && truckId > 0) {
+            fetchRoutes(truckId)
+        } else {
+            Toast.makeText(context, "ID do caminhão não encontrado para buscar rotas.", Toast.LENGTH_LONG).show()
+        }
     }
 
-    // 3. Limpeza de Memória
+    private fun fetchRoutes(truckId: Int) {
+        // Você pode adicionar um ProgressBar aqui, se o layout tiver um
+        // binding.progressBar.visibility = View.VISIBLE
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.getRoutes(truckId)
+
+                if (response.isSuccessful) {
+                    val routesList = response.body()
+                    routesList?.let {
+                        // Lógica para exibir a rota (ex: atualizar TextViews, se houver)
+                        if (it.isNotEmpty()) {
+                            // Exemplo: exibe o ponto de partida da primeira rota no log/Toast
+                            Log.i("API_SUCCESS", "Rotas carregadas. Partida: ${it.first().partida}")
+                            Toast.makeText(context, "Rotas carregadas com sucesso.", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Nenhuma rota encontrada.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("API_ERROR", "Erro ao buscar rotas: ${response.code()}. Body: $errorBody")
+                    Toast.makeText(context, "Erro ao carregar rotas: ${response.code()}", Toast.LENGTH_LONG).show()
+                }
+
+            } catch (e: Exception) {
+                Log.e("API_EXCEPTION", "Falha na chamada da API de rotas", e)
+                Toast.makeText(context, "Erro de conexão: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                // binding.progressBar.visibility = View.GONE
+            }
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        // Libera a referência do binding para evitar memory leaks
         _binding = null
     }
 }
