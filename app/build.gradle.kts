@@ -25,7 +25,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "BASE_URL", "https://api-postgresql-kr87.onrender.com/v1/api/")
+        buildConfigField("String", "BASE_URL", "\"https://api-postgresql-kr87.onrender.com/v1/api/\"")
     }
 
     buildTypes {

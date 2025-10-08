@@ -29,7 +29,6 @@ class MaintenanceAdapter (private val items: List<Maintenance>)  :
         holder.manTitulo.text = maintenance.titulo
         holder.manInfo.text = maintenance.info
         holder.manDate.text = maintenance.dataOcorrido.toString()
-        holder.manStatus.text = maintenance.status
     }
 
     override fun getItemCount() = items.size

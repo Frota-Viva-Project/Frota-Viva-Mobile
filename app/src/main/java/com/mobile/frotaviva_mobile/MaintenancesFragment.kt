@@ -26,7 +26,7 @@ class ManutencoesFragment : Fragment() {
     private val binding get() = _binding!!
 
     companion object {
-        const val TRUCK_ID_KEY = "1"
+        const val TRUCK_ID_KEY = "truckId"
     }
 
     override fun onCreateView(
