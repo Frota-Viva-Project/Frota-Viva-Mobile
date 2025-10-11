@@ -1,6 +1,5 @@
 package com.mobile.frotaviva_mobile.adapter
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,13 +10,7 @@ import com.mobile.frotaviva_mobile.model.Alert
 
 class AlertAdapter(private var items: List<Alert>) :
     RecyclerView.Adapter<AlertAdapter.AlertViewHolder>() {
-    companion object {
-        private const val TAG = "AlertAdapterLog"
-    }
 
-    init {
-        Log.d(TAG, "Adapter inicializado com ${items.size} itens.")
-    }
     class AlertViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvTitulo: TextView = itemView.findViewById(R.id.alertTitle)
         val tvCategoria: TextView = itemView.findViewById(R.id.alertCatInfo)
@@ -38,14 +31,11 @@ class AlertAdapter(private var items: List<Alert>) :
     }
 
     override fun getItemCount(): Int {
-        val count = items.size
-        Log.d(TAG, "getItemCount: Retornando $count itens.")
-        return count
+        return items.size
     }
 
     fun updateData(newItems: List<Alert>) {
         this.items = newItems
-        Log.i(TAG, "updateData: Lista de manutenções atualizada com ${newItems.size} itens.")
         notifyDataSetChanged()
     }
 }
