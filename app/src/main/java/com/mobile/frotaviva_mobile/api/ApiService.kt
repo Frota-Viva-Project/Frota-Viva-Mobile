@@ -6,7 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface ApiService {
-    @GET("alerta/caminhao/{id}")
+    @GET("alerta/{id}")
     suspend fun getAlerts(
         @Path("id") id: Int
     ): Response<List<Alert>>

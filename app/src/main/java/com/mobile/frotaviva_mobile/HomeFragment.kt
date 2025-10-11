@@ -1,50 +1,123 @@
 package com.mobile.frotaviva_mobile.fragments
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
-// O nome desta classe é gerado a partir do seu XML: fragment_home.xml -> FragmentHomeBinding
+import com.mobile.frotaviva_mobile.MainActivity
+import com.mobile.frotaviva_mobile.R
 
-// Renomeado para HomeFragment para consistência
 class HomeFragment : Fragment() {
 
-    // 1. Setup do View Binding
+    // Adiciona uma TAG para logs
+    companion object {
+        private const val TAG = "HomeFragmentLog"
+    }
+
     private var _binding: FragmentHomeBinding? = null
-    // Propriedade para acessar o binding de forma segura
     private val binding get() = _binding!!
+    private val db = FirebaseFirestore.getInstance()
+
+    // --- Logs de Ciclo de Vida (Adicionados) ---
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        Log.d(TAG, "onAttach: Fragment anexado à Activity.")
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate: Fragment criado.")
+    }
+    // ---------------------------------------------
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // 2. Infla o layout usando View Binding
+        Log.d(TAG, "onCreateView: Inflando layout.")
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        val app = db.app
+        // Mantido seu log original do Firebase, mas usando a TAG da classe
+        Log.d(TAG, "Firestore App: ${app.name}, Project ID: ${app.options.projectId}")
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Log.d(TAG, "onViewCreated: View criada.")
 
-        // Coloque aqui a lógica para buscar e exibir os dados
-        // (ex: buscar nome do motorista, placa do Firebase, carregar rotas)
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            Log.d(TAG, "Usuário autenticado. UID: ${user.uid}")
+            user.getIdToken(true).addOnSuccessListener {
+                Log.d(TAG, "Token atualizado com sucesso: ${it.token?.substring(0, 30)}...")
 
-        // Exemplo: Atualizando dados do motorista
-        // binding.textView5.text = "Nome do Motorista Aqui"
-        // binding.textView8.text = "XXX-0000"
+                // *** CHAVE PARA O SEU PROBLEMA: BUSCAR O truckId ***
+                fetchTruckIdAndSetInActivity(user.uid)
 
-        // *****************************************************************
-        // Se você usou o código da MainActivity original,
-        // a lógica de carregamento dos dados de perfil deve vir para cá.
-        // *****************************************************************
+            }.addOnFailureListener {
+                Log.e(TAG, "Erro ao atualizar token", it)
+            }
+        } else {
+            Log.e(TAG, "Usuário não autenticado. Não é possível buscar truckId.")
+            // Você pode adicionar uma navegação para a tela de Login aqui se for necessário
+        }
     }
 
-    // 3. Limpeza de Memória
+    /**
+     * Função que busca o truckId no Firestore baseado no UID do usuário
+     * e o armazena na MainActivity.
+     */
+    private fun fetchTruckIdAndSetInActivity(uid: String) {
+        Log.d(TAG, "Buscando truckId para o UID: $uid")
+
+        db.collection("driver").document(uid) // (Assumindo que você corrigiu o nome da coleção para 'driver')
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val truckId = document.getLong("truckId")?.toInt()
+
+                    if (truckId != null && truckId > 0) {
+                        Log.i(TAG, "SUCESSO! truckId encontrado: $truckId")
+
+                        // PASSO 1: Seta o ID na Activity
+                        (activity as? MainActivity)?.truckId = truckId
+
+                        // PASSO 2: **FORÇA A NAVEGAÇÃO** se o usuário já estiver na aba Manutenções
+                        // Isso garante que o fragmento seja recarregado com o ID agora disponível.
+                        val currentItemId = (activity as? MainActivity)?.binding?.navbarInclude?.bottomNavigation?.selectedItemId
+                        if (currentItemId == R.id.nav_manutencoes) {
+                            (activity as? MainActivity)?.navigateToAlerts()
+                        }
+
+                    } else {
+                        Log.w(TAG, "WARN: Campo 'truckId' nulo ou inválido no Firestore...")
+                        (activity as? MainActivity)?.truckId = null
+                    }
+                } else {
+                    Log.w(TAG, "WARN: Documento do usuário não encontrado no Firestore...")
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "ERRO ao buscar documento do usuário no Firestore: $exception")
+            }
+    }
+
+
     override fun onDestroyView() {
         super.onDestroyView()
-        // Libera a referência do binding para evitar memory leaks
+        Log.d(TAG, "onDestroyView: Limpando binding.")
         _binding = null
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        Log.d(TAG, "onDetach: Fragment desanexado da Activity.")
     }
 }
