@@ -25,14 +25,6 @@ class MaintenanceAdapter (private var items: List<Maintenance>)  : // Mudado par
         // Log aqui pode ser útil se o R.id.manTitulo/Info/Date estiverem errados
         val manTitulo: TextView = itemView.findViewById(R.id.manTitulo)
         val manInfo: TextView = itemView.findViewById(R.id.manInfo)
-        val manDate: TextView = itemView.findViewById(R.id.manDate)
-
-        init {
-            // Confirma se as Views foram encontradas
-            if (manDate == null) {
-                Log.e(TAG, "ERRO CRÍTICO: Uma ou mais views (manTitulo/Info/Date) não foram encontradas no layout maintenance_item!")
-            }
-        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MaintenanceViewHolder {
@@ -50,10 +42,6 @@ class MaintenanceAdapter (private var items: List<Maintenance>)  : // Mudado par
 
         holder.manTitulo.text = maintenance.titulo
         holder.manInfo.text = maintenance.info
-
-        // Nota: maintenance.dataOcorrido.toString() pode ser muito verboso.
-        // Você pode querer formatar essa data para algo mais legível (ex: SimpleDateFormat)
-        holder.manDate.text = maintenance.dataOcorrido.toString()
     }
 
     override fun getItemCount(): Int {
