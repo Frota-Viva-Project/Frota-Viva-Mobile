@@ -29,7 +29,7 @@ class MaintenanceAdapter (private var items: List<Maintenance>)  : // Mudado par
 
         init {
             // Confirma se as Views foram encontradas
-            if (manTitulo == null || manInfo == null || manDate == null) {
+            if (manDate == null) {
                 Log.e(TAG, "ERRO CRÍTICO: Uma ou mais views (manTitulo/Info/Date) não foram encontradas no layout maintenance_item!")
             }
         }

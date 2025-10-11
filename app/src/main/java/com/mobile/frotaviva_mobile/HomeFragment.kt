@@ -11,6 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
 import com.mobile.frotaviva_mobile.MainActivity
+import com.mobile.frotaviva_mobile.R
 
 class HomeFragment : Fragment() {
 
@@ -74,27 +75,33 @@ class HomeFragment : Fragment() {
      * e o armazena na MainActivity.
      */
     private fun fetchTruckIdAndSetInActivity(uid: String) {
-        // ASSUMÇÃO: O truckId está armazenado em uma coleção chamada 'users'
-        // e o documento é o próprio UID, com um campo chamado 'truckId'.
         Log.d(TAG, "Buscando truckId para o UID: $uid")
 
-        db.collection("users").document(uid)
+        db.collection("driver").document(uid) // (Assumindo que você corrigiu o nome da coleção para 'driver')
             .get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
-                    // Tenta obter o 'truckId'. Assumindo que é um Long no Firestore (pode ser Int ou String)
                     val truckId = document.getLong("truckId")?.toInt()
 
                     if (truckId != null && truckId > 0) {
                         Log.i(TAG, "SUCESSO! truckId encontrado: $truckId")
-                        // Passa o ID do caminhão para a MainActivity
+
+                        // PASSO 1: Seta o ID na Activity
                         (activity as? MainActivity)?.truckId = truckId
+
+                        // PASSO 2: **FORÇA A NAVEGAÇÃO** se o usuário já estiver na aba Manutenções
+                        // Isso garante que o fragmento seja recarregado com o ID agora disponível.
+                        val currentItemId = (activity as? MainActivity)?.binding?.navbarInclude?.bottomNavigation?.selectedItemId
+                        if (currentItemId == R.id.nav_manutencoes) {
+                            (activity as? MainActivity)?.navigateToMaintenance()
+                        }
+
                     } else {
-                        Log.w(TAG, "WARN: Campo 'truckId' nulo ou inválido no Firestore para o UID: $uid")
-                        (activity as? MainActivity)?.truckId = null // Limpa se for inválido
+                        Log.w(TAG, "WARN: Campo 'truckId' nulo ou inválido no Firestore...")
+                        (activity as? MainActivity)?.truckId = null
                     }
                 } else {
-                    Log.w(TAG, "WARN: Documento do usuário não encontrado no Firestore para o UID: $uid")
+                    Log.w(TAG, "WARN: Documento do usuário não encontrado no Firestore...")
                 }
             }
             .addOnFailureListener { exception ->

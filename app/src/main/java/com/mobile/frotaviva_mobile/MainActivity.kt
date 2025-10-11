@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "MainActivityLog"
     }
 
-    private lateinit var binding: ActivityMainBinding
+    lateinit var binding: ActivityMainBinding
     var truckId: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,6 +89,21 @@ class MainActivity : AppCompatActivity() {
             .replace(R.id.fragmentContainer, fragment)
             .commit()
     }
+
+    fun navigateToMaintenance() {
+        Log.d(TAG, "navigateToMaintenance: Invocado para forçar a navegação.")
+
+        // 1. Define o item de navegação como Manutenções
+        val menuItem = binding.navbarInclude.bottomNavigation.menu.findItem(R.id.nav_manutencoes)
+
+        // 2. Chama o listener de seleção para executar a lógica de carregamento do fragment
+        if (menuItem != null) {
+            // Isso irá re-executar a lógica dentro do setOnItemSelectedListener
+            // que agora encontrará o truckId válido.
+            binding.navbarInclude.bottomNavigation.selectedItemId = menuItem.itemId
+        }
+    }
+
 
     // Opcional: Adicione mais logs do ciclo de vida se precisar rastrear mais
     override fun onStart() {
