@@ -8,14 +8,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.mobile.frotaviva_mobile.R
 import com.mobile.frotaviva_mobile.model.Maintenance
 
-class MaintenanceAdapter (private val items: List<Maintenance>)  :
+class MaintenanceAdapter (private var items: List<Maintenance>)  :
     RecyclerView.Adapter<MaintenanceAdapter.MaintenanceViewHolder>() {
 
     class MaintenanceViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val manTitulo: TextView = itemView.findViewById(R.id.alertTitle)
-        val manInfo: TextView = itemView.findViewById(R.id.alertCat)
-        val manDate: TextView = itemView.findViewById(R.id.manDate)
-        val manStatus: TextView = itemView.findViewById(R.id.manStatus)
+        val manTitulo: TextView = itemView.findViewById(R.id.manTitulo)
+        val manInfo: TextView = itemView.findViewById(R.id.manInfo)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MaintenanceViewHolder {
@@ -28,9 +26,14 @@ class MaintenanceAdapter (private val items: List<Maintenance>)  :
         val maintenance = items[position]
         holder.manTitulo.text = maintenance.titulo
         holder.manInfo.text = maintenance.info
-        holder.manDate.text = maintenance.dataOcorrido.toString()
-        holder.manStatus.text = maintenance.status
     }
 
-    override fun getItemCount() = items.size
+    override fun getItemCount(): Int {
+        return items.size
+    }
+
+    fun updateData(newItems: List<Maintenance>) {
+        this.items = newItems
+        notifyDataSetChanged()
+    }
 }

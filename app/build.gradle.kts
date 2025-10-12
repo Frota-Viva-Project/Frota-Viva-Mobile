@@ -12,6 +12,10 @@ android {
         enable = true
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.mobile.frotaviva_mobile"
         minSdk = 33
@@ -20,6 +24,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "BASE_URL", "\"https://api-postgresql-kr87.onrender.com/v1/api/\"")
     }
 
     buildTypes {

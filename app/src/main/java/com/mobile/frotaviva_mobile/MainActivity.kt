@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.mobile.frotaviva_mobile.databinding.ActivityMainBinding
 import com.mobile.frotaviva_mobile.fragments.AvisosFragment
 import com.mobile.frotaviva_mobile.fragments.HomeFragment
@@ -16,6 +18,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+            DebugAppCheckProviderFactory.getInstance()
+        )
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -49,7 +55,17 @@ class MainActivity : AppCompatActivity() {
 
                 }
                 R.id.nav_manutencoes -> {
-                    loadFragment(ManutencoesFragment())
+                    val id = truckId
+                    if (id != null && id > 0) {
+                        val fragment = ManutencoesFragment().apply {
+                            arguments = Bundle().apply {
+                                putInt(ManutencoesFragment.TRUCK_ID_KEY, id)
+                            }
+                        }
+                        loadFragment(fragment)
+                    } else {
+                        Toast.makeText(this, "Caminhão não encontrado", Toast.LENGTH_SHORT).show()
+                    }
                     true
                 }
                 else -> false
@@ -64,8 +80,17 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
 
+    fun navigateToMaintenance() {
+        val menuItem = binding.navbarInclude.bottomNavigation.menu.findItem(R.id.nav_manutencoes)
+
+        if (menuItem != null) {
+            binding.navbarInclude.bottomNavigation.selectedItemId = menuItem.itemId
+        }
+    }
+
     fun navigateToAlerts() {
         val menuItem = binding.navbarInclude.bottomNavigation.menu.findItem(R.id.nav_avisos)
+
         if (menuItem != null) {
             binding.navbarInclude.bottomNavigation.selectedItemId = menuItem.itemId
         }
