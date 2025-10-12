@@ -5,22 +5,22 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
-// O nome desta classe é gerado a partir do seu XML: fragment_home.xml -> FragmentHomeBinding
+import com.mobile.frotaviva_mobile.MainActivity
+import com.mobile.frotaviva_mobile.R
 
-// Renomeado para HomeFragment para consistência
 class HomeFragment : Fragment() {
 
-    // 1. Setup do View Binding
     private var _binding: FragmentHomeBinding? = null
-    // Propriedade para acessar o binding de forma segura
     private val binding get() = _binding!!
+    private val db = FirebaseFirestore.getInstance()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // 2. Infla o layout usando View Binding
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -28,23 +28,40 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Coloque aqui a lógica para buscar e exibir os dados
-        // (ex: buscar nome do motorista, placa do Firebase, carregar rotas)
-
-        // Exemplo: Atualizando dados do motorista
-        // binding.textView5.text = "Nome do Motorista Aqui"
-        // binding.textView8.text = "XXX-0000"
-
-        // *****************************************************************
-        // Se você usou o código da MainActivity original,
-        // a lógica de carregamento dos dados de perfil deve vir para cá.
-        // *****************************************************************
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            user.getIdToken(true).addOnSuccessListener {
+                fetchTruckIdAndSetInActivity(user.uid)
+            }.addOnFailureListener {
+            }
+        }
     }
 
-    // 3. Limpeza de Memória
+    private fun fetchTruckIdAndSetInActivity(uid: String) {
+        db.collection("driver").document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val truckId = document.getLong("truckId")?.toInt()
+
+                    if (truckId != null && truckId > 0) {
+                        (activity as? MainActivity)?.truckId = truckId
+
+                        val currentItemId = (activity as? MainActivity)?.binding?.navbarInclude?.bottomNavigation?.selectedItemId
+                        if (currentItemId == R.id.nav_manutencoes) {
+                            (activity as? MainActivity)?.navigateToAlerts()
+                        }
+                    } else {
+                        (activity as? MainActivity)?.truckId = null
+                    }
+                }
+            }
+            .addOnFailureListener { exception ->
+            }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        // Libera a referência do binding para evitar memory leaks
         _binding = null
     }
 }

@@ -12,6 +12,8 @@ constraintlayout = "2.2.1"
 firebaseAuthKtx = "24.0.1"
 cardview = "1.0.0"
 recyclerview = "1.4.0"
+#firebaseAppcheckKtx = "19.0.1"
+#firebaseAppcheckDebug = "19.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -25,6 +27,8 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
 androidx-cardview = { group = "androidx.cardview", name = "cardview", version.ref = "cardview" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+firebase-appcheck-ktx = { group = "com.google.firebase", name = "firebase-appcheck-ktx" }
+firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
