@@ -40,8 +40,19 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_avisos -> {
-                    loadFragment(AvisosFragment())
+                    val id = truckId
+                    if (id != null && id > 0) {
+                        val fragment = AvisosFragment().apply {
+                            arguments = Bundle().apply {
+                                putInt(AvisosFragment.TRUCK_ID_KEY, id)
+                            }
+                        }
+                        loadFragment(fragment)
+                    } else {
+                        Toast.makeText(this, "Caminhão não encontrado", Toast.LENGTH_SHORT).show()
+                    }
                     true
+
                 }
                 R.id.nav_manutencoes -> {
                     val id = truckId
@@ -60,6 +71,7 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
     }
 
     private fun loadFragment(fragment: Fragment) {
@@ -70,6 +82,14 @@ class MainActivity : AppCompatActivity() {
 
     fun navigateToMaintenance() {
         val menuItem = binding.navbarInclude.bottomNavigation.menu.findItem(R.id.nav_manutencoes)
+
+        if (menuItem != null) {
+            binding.navbarInclude.bottomNavigation.selectedItemId = menuItem.itemId
+        }
+    }
+
+    fun navigateToAlerts() {
+        val menuItem = binding.navbarInclude.bottomNavigation.menu.findItem(R.id.nav_avisos)
 
         if (menuItem != null) {
             binding.navbarInclude.bottomNavigation.selectedItemId = menuItem.itemId

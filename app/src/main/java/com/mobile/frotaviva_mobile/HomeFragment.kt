@@ -48,10 +48,15 @@ class HomeFragment : Fragment() {
                         (activity as? MainActivity)?.truckId = truckId
 
                         val currentItemId = (activity as? MainActivity)?.binding?.navbarInclude?.bottomNavigation?.selectedItemId
-                        if (currentItemId == R.id.nav_manutencoes) {
-                            (activity as? MainActivity)?.navigateToMaintenance()
+                        
+                        when (currentItemId) {
+                            R.id.nav_manutencoes -> {
+                                (activity as? MainActivity)?.navigateToMaintenance()
+                            }
+                            R.id.nav_alerts -> {
+                                (activity as? MainActivity)?.navigateToAlerts()
+                            }
                         }
-
                     } else {
                         (activity as? MainActivity)?.truckId = null
                     }
