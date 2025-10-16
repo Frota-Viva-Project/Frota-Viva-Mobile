@@ -22,4 +22,13 @@
     <string name="loading_display">Carregando..</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="permission_denied">Permissão de localização negada.</string>
+    <string name="location_not_available">Localização não disponível.</string>
+    <string name="location_failed">Falha ao obter localização.</string>
+    <string name="location_unknown">Atualmente em: Localização desconhecida</string>
+    <string name="service_error">Atualmente em: Erro de serviço (Rede/Geocoding)</string>
+    <string name="unknown_error">Atualmente em: Erro desconhecido de Geocoding</string>
+    <string name="currently_at">Atualmente em: %1$s</string>
+    <string name="marker_title">Localização Atual da Frota</string>
+    <string name="update_location_button">Botão de atualização de localização</string>
 </resources>
