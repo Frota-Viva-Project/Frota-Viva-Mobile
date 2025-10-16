@@ -22,7 +22,7 @@ import com.mobile.frotaviva_mobile.model.Alert
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class AvisosFragment : Fragment() {
+class AlertsFragment : Fragment() {
 
     companion object {
         const val TRUCK_ID_KEY = "truckId"
@@ -58,7 +58,8 @@ class AvisosFragment : Fragment() {
         val db = FirebaseFirestore.getInstance()
 
         if (user == null) {
-            Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
+            // Usa requireContext() pois estamos em onViewCreated, o fragment está anexado.
+            Toast.makeText(requireContext(), "Usuário não autenticado", Toast.LENGTH_LONG).show()
             setupRecyclerView(emptyList())
             return
         }
@@ -70,25 +71,37 @@ class AvisosFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 val snapshot = db.collection("driver").document(userId).get().await()
+
+                // ** CORREÇÃO 1: Checa se o Fragment ainda está anexado antes de prosseguir com UI **
+                if (!isAdded) return@launch
+
                 if (snapshot.exists()) {
                     val truckId = snapshot.getLong("truckId")?.toInt() ?: 0
 
                     if (truckId > 0) {
                         fetchAlerts(truckId)
                     } else {
-                        Toast.makeText(context, "ID do caminhão não encontrado.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), "ID do caminhão não encontrado.", Toast.LENGTH_LONG).show()
                         setupRecyclerView(emptyList())
                         showLoading(false)
                     }
                 } else {
-                    Toast.makeText(context, "Motorista não encontrado.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "Motorista não encontrado.", Toast.LENGTH_LONG).show()
                     setupRecyclerView(emptyList())
                     showLoading(false)
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
-                setupRecyclerView(emptyList())
-                showLoading(false)
+                // ** CORREÇÃO 2: Checa se o Fragment ainda está anexado antes de mostrar o Toast **
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+                // O `_binding != null` é a checagem implícita feita pelo `binding get() = _binding!!`
+                // Como esta checagem está dentro do `lifecycleScope`, se o job não foi cancelado,
+                // significa que a View provavelmente ainda existe, mas a checagem `!isAdded` acima é a mais segura.
+                if (_binding != null) {
+                    setupRecyclerView(emptyList())
+                    showLoading(false)
+                }
             }
         }
     }
@@ -101,30 +114,46 @@ class AvisosFragment : Fragment() {
             try {
                 val response = RetrofitClient.instance.getAlerts(truckId)
 
+                // ** CORREÇÃO 3: Checa se o Fragment ainda está anexado após a requisição **
+                if (!isAdded) return@launch
+
                 if (response.isSuccessful) {
                     val alertsList = response.body()
                     alertsList?.let {
                         setupRecyclerView(it)
                     } ?: run {
                         setupRecyclerView(emptyList())
-                        Toast.makeText(context, "Nenhum alerta encontrada.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Nenhum alerta encontrada.", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
                     setupRecyclerView(emptyList())
                 }
 
             } catch (e: Exception) {
-                Toast.makeText(context, "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
-                setupRecyclerView(emptyList())
+                // ** CORREÇÃO 4: Checa se o Fragment ainda está anexado antes de mostrar o Toast **
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+                if (_binding != null) {
+                    setupRecyclerView(emptyList())
+                }
             } finally {
-                showLoading(false)
+                // ** CORREÇÃO 5: Garante que só acessa o binding se a View não foi destruída **
+                if (_binding != null) {
+                    showLoading(false)
+                }
             }
         }
     }
 
 
     private fun showLoading(isLoading: Boolean) {
+        // Esta função usa 'binding' e, portanto, só deve ser chamada se '_binding' não for nulo.
+        // As chamadas externas já foram verificadas (Correção 5), mas se for chamada diretamente,
+        // a verificação `_binding != null` pode ser adicionada aqui para máxima segurança.
+        if (_binding == null) return
+
         if (isLoading) {
             binding.progressBar.visibility = View.VISIBLE
             binding.alertRecyclerView.visibility = View.GONE
@@ -136,9 +165,13 @@ class AvisosFragment : Fragment() {
 
 
     private fun setupRecyclerView(data: List<Alert>) {
+        // Similarmente, esta função usa 'binding'
+        if (_binding == null) return
+
         if (binding.alertRecyclerView.adapter == null) {
             val recyclerView = binding.alertRecyclerView
-            recyclerView.layoutManager = LinearLayoutManager(context)
+            // Usa requireContext() para a criação do LayoutManager, que precisa de um Context válido
+            recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.addItemDecoration(VerticalSpaceItemDecoration(dpToPx(24)))
             recyclerView.adapter = AlertAdapter(data)
         } else {
@@ -148,6 +181,7 @@ class AvisosFragment : Fragment() {
 
 
     private fun setupDropdown() {
+        if (_binding == null) return
         val placeholder = binding.dropdownContainer
         layoutInflater.inflate(R.layout.dropdown, placeholder, true)
     }

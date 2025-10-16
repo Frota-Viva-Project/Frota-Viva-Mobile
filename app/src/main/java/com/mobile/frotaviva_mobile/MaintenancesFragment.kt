@@ -23,7 +23,7 @@ import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import java.util.Date
 
-class ManutencoesFragment : Fragment() {
+class MaintenancesFragment : Fragment() {
 
     companion object {
         const val TRUCK_ID_KEY = "truckId"
@@ -48,6 +48,8 @@ class ManutencoesFragment : Fragment() {
     }
 
     private fun showLoading(isLoading: Boolean) {
+        if (_binding == null) return // **CORREÇÃO: Evita acessar binding após onDestroyView**
+
         if (isLoading) {
             binding.progressBar.visibility = View.VISIBLE
             binding.maintenancesRecyclerView.visibility = View.GONE
@@ -69,7 +71,8 @@ class ManutencoesFragment : Fragment() {
         val db = FirebaseFirestore.getInstance()
 
         if (user == null) {
-            Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
+            // Usa requireContext() para garantir que o Context é válido.
+            Toast.makeText(requireContext(), "Usuário não autenticado", Toast.LENGTH_LONG).show()
             setupRecyclerView(emptyList())
             return
         }
@@ -81,25 +84,34 @@ class ManutencoesFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 val snapshot = db.collection("driver").document(userId).get().await()
+
+                // ** CORREÇÃO 1: Checa se o Fragment ainda está anexado após a operação assíncrona **
+                if (!isAdded) return@launch
+
                 if (snapshot.exists()) {
                     val truckId = snapshot.getLong("truckId")?.toInt() ?: 0
 
                     if (truckId > 0) {
                         fetchMaintenances(truckId)
                     } else {
-                        Toast.makeText(context, "ID do caminhão não encontrado.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), "ID do caminhão não encontrado.", Toast.LENGTH_LONG).show()
                         setupRecyclerView(emptyList())
                         showLoading(false)
                     }
                 } else {
-                    Toast.makeText(context, "Motorista não encontrado.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "Motorista não encontrado.", Toast.LENGTH_LONG).show()
                     setupRecyclerView(emptyList())
                     showLoading(false)
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
-                setupRecyclerView(emptyList())
-                showLoading(false)
+                // ** CORREÇÃO 2: Checa se o Fragment está anexado antes de mostrar o Toast **
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+                if (_binding != null) {
+                    setupRecyclerView(emptyList())
+                    showLoading(false)
+                }
             }
         }
     }
@@ -112,32 +124,46 @@ class ManutencoesFragment : Fragment() {
             try {
                 val response = RetrofitClient.instance.getMaintenances(truckId)
 
+                // ** CORREÇÃO 3: Checa se o Fragment ainda está anexado após a requisição de rede **
+                if (!isAdded) return@launch
+
                 if (response.isSuccessful) {
                     val maintenancesList = response.body()
                     maintenancesList?.let {
                         setupRecyclerView(it)
                     } ?: run {
                         setupRecyclerView(emptyList())
-                        Toast.makeText(context, "Nenhuma manutenção encontrada.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Nenhuma manutenção encontrada.", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "Erro ao carregar manutenções: ${response.code()}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "Erro ao carregar manutenções: ${response.code()}", Toast.LENGTH_LONG).show()
                     setupRecyclerView(emptyList())
                 }
 
             } catch (e: Exception) {
-                Toast.makeText(context, "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
-                setupRecyclerView(emptyList())
+                // ** CORREÇÃO 4: Checa se o Fragment está anexado antes de mostrar o Toast **
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+                if (_binding != null) {
+                    setupRecyclerView(emptyList())
+                }
             } finally {
-                showLoading(false)
+                // ** CORREÇÃO 5: Garante que só acessa o binding se a View não foi destruída **
+                if (_binding != null) {
+                    showLoading(false)
+                }
             }
         }
     }
 
     private fun setupRecyclerView(data: List<Maintenance>) {
+        if (_binding == null) return // **CORREÇÃO: Evita acessar binding após onDestroyView**
+
         if (binding.maintenancesRecyclerView.adapter == null) {
             val recyclerView = binding.maintenancesRecyclerView
-            recyclerView.layoutManager = LinearLayoutManager(context)
+            // Usa requireContext() para garantir um Context válido.
+            recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.addItemDecoration(VerticalSpaceItemDecoration(dpToPx(24)))
             recyclerView.adapter = MaintenanceAdapter(data)
         } else {
@@ -161,6 +187,7 @@ class ManutencoesFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Este é o ponto onde o binding é limpo.
         _binding = null
     }
 }
