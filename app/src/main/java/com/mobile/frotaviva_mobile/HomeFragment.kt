@@ -3,7 +3,6 @@ package com.mobile.frotaviva_mobile.fragments
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -12,7 +11,6 @@ import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
@@ -87,25 +85,24 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync(this)
 
-        binding.cardMapContainer.setOnClickListener {
-            openFullScreenMap()
-        }
-
         binding.updateButton.setOnClickListener {
             getLastKnownLocationAndUpdateUI()
         }
 
+        // Listener para abrir o mapa modal
         binding.mapClickOverlay.setOnClickListener {
             Log.d("HomeFragment", "Overlay Clicado! Abrindo modal.")
             Toast.makeText(requireContext(), "Abrindo Mapa...", Toast.LENGTH_SHORT).show()
             openFullScreenMap()
         }
 
+        // Inicia a busca de dados do motorista e do veículo
         val user = FirebaseAuth.getInstance().currentUser
         if (user != null) {
             user.getIdToken(true).addOnSuccessListener {
-                fetchTruckIdAndSetInActivity(user.uid)
+                fetchDriverAndTruckDetails(user.uid) // Chamada para a nova função
             }.addOnFailureListener {
+                // Tratar falha na obtenção do token (opcional)
             }
         }
     }
@@ -137,7 +134,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
-        // Alteração: Desabilita TODOS os gestos. O mapa agora é uma imagem estática.
+        // Desabilita TODOS os gestos. O mapa agora é uma imagem estática.
         googleMap.uiSettings.isScrollGesturesEnabled = false
         googleMap.uiSettings.isZoomGesturesEnabled = false
         googleMap.uiSettings.isTiltGesturesEnabled = false
@@ -157,7 +154,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             location?.let {
-                // NOVO: Usa o DialogFragment para o efeito modal
+                // Usa o DialogFragment para o efeito modal
                 val mapDialog = MapDialogFragment.newInstance(it.latitude, it.longitude)
                 mapDialog.show(childFragmentManager, MapDialogFragment.TAG)
 
@@ -165,6 +162,52 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 Toast.makeText(requireContext(), getString(R.string.location_not_available), Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    // NOVO: 1. Busca os dados do motorista (Nome e truckId)
+    private fun fetchDriverAndTruckDetails(uid: String) {
+        // Assume que o UID do usuário é o ID do documento na coleção "driver"
+        db.collection("driver").document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+
+                    // 1. Puxa os dados diretamente do documento do motorista
+                    val name = document.getString("name") ?: getString(R.string.data_not_found)
+                    val carModel = document.getString("carModel") ?: getString(R.string.data_not_found)
+                    val carPlate = document.getString("carPlate") ?: getString(R.string.data_not_found)
+
+                    val truckId = document.getLong("truckId")?.toInt()
+                    if (truckId != null && truckId > 0) {
+                        (activity as? MainActivity)?.truckId = truckId
+                    }
+
+                    // 2. Exibe os dados nos TextViews
+                    binding.collaboratorName.text = name
+                    binding.collaboratorCar.text = carModel
+                    binding.collaboratorPlate.text = carPlate
+
+                    // Lógica de navegação (mantida da sua lógica original)
+                    val currentItemId = (activity as? MainActivity)?.binding?.navbarInclude?.bottomNavigation?.selectedItemId
+                    when (currentItemId) {
+                        R.id.nav_manutencoes -> if (currentItemId != R.id.nav_home) (activity as? MainActivity)?.navigateToMaintenance()
+                        R.id.nav_avisos -> if (currentItemId != R.id.nav_home) (activity as? MainActivity)?.navigateToAlerts()
+                    }
+
+                } else {
+                    // Documento do motorista não encontrado
+                    binding.collaboratorName.text = getString(R.string.loading_error)
+                    binding.collaboratorCar.text = getString(R.string.loading_error)
+                    binding.collaboratorPlate.text = getString(R.string.loading_error)
+                }
+            }
+            .addOnFailureListener {
+                // Lidar com falha na conexão/consulta
+                binding.collaboratorName.text = getString(R.string.loading_error)
+                binding.collaboratorCar.text = getString(R.string.loading_error)
+                binding.collaboratorPlate.text = getString(R.string.loading_error)
+                Log.e("HomeFragment", "Falha ao buscar detalhes do motorista", it)
+            }
     }
 
     @SuppressLint("MissingPermission")
@@ -243,38 +286,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun fetchTruckIdAndSetInActivity(uid: String) {
-        db.collection("driver").document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val truckId = document.getLong("truckId")?.toInt()
-
-                    if (truckId != null && truckId > 0) {
-                        (activity as? MainActivity)?.truckId = truckId
-
-                        val currentItemId = (activity as? MainActivity)?.binding?.navbarInclude?.bottomNavigation?.selectedItemId
-
-                        when (currentItemId) {
-                            R.id.nav_manutencoes -> {
-                                if (currentItemId != R.id.nav_home) {
-                                    (activity as? MainActivity)?.navigateToMaintenance()
-                                }
-                            }
-                            R.id.nav_avisos -> {
-                                if (currentItemId != R.id.nav_home) {
-                                    (activity as? MainActivity)?.navigateToAlerts()
-                                }
-                            }
-                        }
-                    } else {
-                        (activity as? MainActivity)?.truckId = null
-                    }
-                }
-            }
-            .addOnFailureListener {
-            }
-    }
+    // A função fetchTruckIdAndSetInActivity antiga foi removida e substituída por fetchDriverDetails
 
     override fun onDestroyView() {
         super.onDestroyView()

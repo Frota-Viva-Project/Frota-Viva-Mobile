@@ -31,4 +31,6 @@
     <string name="currently_at">Atualmente em: %1$s</string>
     <string name="marker_title">Localização Atual da Frota</string>
     <string name="update_location_button">Botão de atualização de localização</string>
+    <string name="data_not_found">Não foram encontrados dados</string>
+    <string name="loading_error">Houve um erro no carregamento</string>
 </resources>

@@ -1,15 +1,20 @@
 package com.mobile.frotaviva_mobile
 
 import android.os.Bundle
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.auth.FirebaseAuth
 import com.mobile.frotaviva_mobile.databinding.ActivityMainBinding
-import com.mobile.frotaviva_mobile.fragments.AvisosFragment
+import com.mobile.frotaviva_mobile.fragments.AlertsFragment
 import com.mobile.frotaviva_mobile.fragments.HomeFragment
-import com.mobile.frotaviva_mobile.fragments.ManutencoesFragment
+import com.mobile.frotaviva_mobile.fragments.MaintenancesFragment
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -42,9 +47,9 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_avisos -> {
                     val id = truckId
                     if (id != null && id > 0) {
-                        val fragment = AvisosFragment().apply {
+                        val fragment = AlertsFragment().apply {
                             arguments = Bundle().apply {
-                                putInt(AvisosFragment.TRUCK_ID_KEY, id)
+                                putInt(AlertsFragment.TRUCK_ID_KEY, id)
                             }
                         }
                         loadFragment(fragment)
@@ -57,9 +62,9 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_manutencoes -> {
                     val id = truckId
                     if (id != null && id > 0) {
-                        val fragment = ManutencoesFragment().apply {
+                        val fragment = MaintenancesFragment().apply {
                             arguments = Bundle().apply {
-                                putInt(ManutencoesFragment.TRUCK_ID_KEY, id)
+                                putInt(MaintenancesFragment.TRUCK_ID_KEY, id)
                             }
                         }
                         loadFragment(fragment)
@@ -72,6 +77,23 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        val headerTitle: TextView = findViewById(R.id.headerTitle)
+        val headerSubtitle: TextView = findViewById(R.id.headerSubtitle)
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            val userName = user.displayName
+            if (!userName.isNullOrEmpty()) {
+                headerTitle.text = "Olá, $userName"
+            } else {
+                // Se o displayName estiver vazio, use o email ou um nome genérico
+                headerTitle.text = "Olá, Usuário"
+            }
+        }
+        val currentDate = Date()
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val formattedDate = dateFormat.format(currentDate)
+
+        headerSubtitle.text = formattedDate
     }
 
     private fun loadFragment(fragment: Fragment) {
