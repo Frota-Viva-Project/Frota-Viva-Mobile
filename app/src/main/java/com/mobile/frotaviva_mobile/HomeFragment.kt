@@ -1,4 +1,4 @@
-package com.mobile.frotaviva_mobile.fragments
+package com.mobile.frotaviva_mobile
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -36,13 +36,12 @@ import com.mobile.frotaviva_mobile.MapDialogFragment
 import com.mobile.frotaviva_mobile.R
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
-import com.mobile.frotaviva_mobile.model.Route
+import com.mobile.frotaviva_mobile.fragments.RoutesDialogFragment
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.Locale
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
-
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val db = FirebaseFirestore.getInstance()
@@ -161,10 +160,63 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    private fun fetchMeters(truckId: Int) {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.getMeters(truckId)
+
+                if (!isAdded) return@launch
+
+                if (response.isSuccessful) {
+                    val meterData = response.body()
+
+                    if (meterData != null) {
+                        updateMetersDisplay(
+                            meterData.nivelCombustivel,
+                            meterData.cargaMotor,
+                            meterData.velocidadeVeiculo.toInt()
+                        )
+                    } else {
+                        updateMetersDisplay(0,0,0)
+                        Toast.makeText(requireContext(), "Dados dos medidores não retornaram",
+                            Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Erro ao carregar medidores: ${response.code()}", Toast.LENGTH_LONG).show()
+                    updateMetersDisplay(0,0,0)
+                }
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Log.e("API_CATCH", "Erro de conexão/API: ${e.message}", e)
+                    Toast.makeText(requireContext(), "Erro de conexão/API", Toast.LENGTH_LONG).show()
+                }
+                updateMetersDisplay(0,0,0)
+            }
+        }
+    }
+
     private fun updateRouteDisplay(departure: String, arrival: String) {
         if (_binding == null) return
         binding.routeDeparture.text = departure
         binding.routeArrival.text = arrival
+    }
+
+
+    private fun updateMetersDisplay(
+        fuelLevel: Int,
+        loadMotor: Int,
+        speed: Int
+    ) {
+        if (_binding == null) return
+
+        binding.progressBarFuel.progress = fuelLevel
+        binding.fuelStatus.text = "$fuelLevel% / 100"
+
+        binding.progressBarLoadMotor.progress = loadMotor
+        binding.loadMotorStatus.text = "$loadMotor% / 100"
+
+        binding.progressBarSpeed.progress = speed
+        binding.speedStats.text = "$speed% / 200"
     }
 
     private fun updateDriverDetailsDisplay(name: String, carModel: String, carPlate: String) {
@@ -250,7 +302,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     val truckId = document.getLong("truckId")?.toInt()
                     if (truckId != null && truckId > 0) {
                         (activity as? MainActivity)?.truckId = truckId
-                        fetchRoutes(truckId) // Inicia a busca de rotas
+                        fetchRoutes(truckId)
+                        fetchMeters(truckId)
                     }
 
                     updateDriverDetailsDisplay(name, carModel, carPlate)

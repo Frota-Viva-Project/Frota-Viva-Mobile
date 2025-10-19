@@ -14,7 +14,6 @@ object RetrofitClient {
         .readTimeout(500, TimeUnit.SECONDS)
         .writeTimeout(500, TimeUnit.SECONDS)
         .build()
-
     val instance: ApiService by lazy {
         val retrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
