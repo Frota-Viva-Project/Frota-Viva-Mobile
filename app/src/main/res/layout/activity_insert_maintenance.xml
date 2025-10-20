@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".InsertMaintenance">
+
+    <Button
+        android:id="@+id/buttonSeeMore2"
+        android:layout_width="171dp"
+        android:layout_height="40dp"
+        android:layout_marginHorizontal="52dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/rounded_button_background"
+        android:text="Inserir"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:backgroundTint="@null"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/statusManInput" />
+
+    <EditText
+        android:id="@+id/titleManInput"
+        android:layout_width="307dp"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="52dp"
+        android:layout_marginTop="24dp"
+        android:autofillHints="emailAddress"
+        android:background="@drawable/rounded_edittext_background"
+        android:hint="Titulo da Manutenção"
+        android:inputType="textEmailAddress"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/primary_default"
+        android:textColorHint="#999999"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView8" />
+
+    <EditText
+        android:id="@+id/descriptionManInput"
+        android:layout_width="307dp"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="52dp"
+        android:layout_marginTop="24dp"
+        android:autofillHints="emailAddress"
+        android:background="@drawable/rounded_edittext_background"
+        android:hint="Descrição"
+        android:inputType="textEmailAddress"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/primary_default"
+        android:textColorHint="#999999"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/titleManInput" />
+
+    <EditText
+        android:id="@+id/dateManInput"
+        android:layout_width="307dp"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="52dp"
+        android:layout_marginTop="24dp"
+        android:autofillHints="emailAddress"
+        android:background="@drawable/rounded_edittext_background"
+        android:hint="Data do Ocorrido"
+        android:inputType="textEmailAddress"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/primary_default"
+        android:textColorHint="#999999"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.403"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/descriptionManInput" />
+
+    <EditText
+        android:id="@+id/statusManInput"
+        android:layout_width="307dp"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="52dp"
+        android:layout_marginTop="24dp"
+        android:autofillHints="emailAddress"
+        android:background="@drawable/rounded_edittext_background"
+        android:hint="Status"
+        android:inputType="textEmailAddress"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/primary_default"
+        android:textColorHint="#999999"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.615"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/dateManInput" />
+
+    <TextView
+        android:id="@+id/textView8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:text="Inserir Manutenção"
+        android:textColor="@color/neutral_700"
+        android:textFontWeight="900"
+        android:textSize="22sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageView13" />
+
+    <ImageView
+        android:id="@+id/imageView13"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="80dp"
+        android:rotation="180"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/arrow_forward" />
+</androidx.constraintlayout.widget.ConstraintLayout>
