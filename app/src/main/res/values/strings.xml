@@ -33,4 +33,7 @@
     <string name="update_location_button">Botão de atualização de localização</string>
     <string name="data_not_found">Não foram encontrados dados</string>
     <string name="loading_error">Houve um erro no carregamento</string>
+    <string name="no_active_route">nenhuma rota ativa foi encontrada!</string>
+    <string name="no_meters">Os medidores nao foram encontrados!</string>
+    <string name="unauthenticated">Usuário nao autenticado</string>
 </resources>

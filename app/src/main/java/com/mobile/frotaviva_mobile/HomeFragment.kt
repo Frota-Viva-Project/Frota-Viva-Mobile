@@ -1,10 +1,9 @@
-package com.mobile.frotaviva_mobile.fragments
+package com.mobile.frotaviva_mobile
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.location.Geocoder
 import android.location.Location
@@ -17,7 +16,9 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -31,15 +32,16 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.MainActivity
+import com.mobile.frotaviva_mobile.MapDialogFragment
 import com.mobile.frotaviva_mobile.R
+import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
+import com.mobile.frotaviva_mobile.fragments.RoutesDialogFragment
+import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.Locale
-import androidx.core.graphics.createBitmap
-import com.mobile.frotaviva_mobile.MapDialogFragment
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
-
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val db = FirebaseFirestore.getInstance()
@@ -53,6 +55,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             requireContext(),
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -89,22 +92,138 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             getLastKnownLocationAndUpdateUI()
         }
 
-        // Listener para abrir o mapa modal
+        binding.buttonSeeMore.setOnClickListener {
+            val truckId = (activity as? MainActivity)?.truckId
+
+            if (truckId != null && truckId > 0) {
+                openAllRoutesModal(truckId)
+            } else {
+                Toast.makeText(requireContext(), "Aguarde, carregando ID do caminhão...", Toast.LENGTH_SHORT).show()
+                // Você pode tentar buscar o ID do caminhão novamente aqui se necessário.
+            }
+        }
+
         binding.mapClickOverlay.setOnClickListener {
-            Log.d("HomeFragment", "Overlay Clicado! Abrindo modal.")
-            Toast.makeText(requireContext(), "Abrindo Mapa...", Toast.LENGTH_SHORT).show()
             openFullScreenMap()
         }
 
-        // Inicia a busca de dados do motorista e do veículo
         val user = FirebaseAuth.getInstance().currentUser
         if (user != null) {
             user.getIdToken(true).addOnSuccessListener {
-                fetchDriverAndTruckDetails(user.uid) // Chamada para a nova função
-            }.addOnFailureListener {
-                // Tratar falha na obtenção do token (opcional)
+                fetchDriverAndTruckDetails(user.uid)
+            }
+        } else {
+            // Lidar com usuário não autenticado
+            updateDriverDetailsDisplay(
+                getString(R.string.unauthenticated),
+                getString(R.string.unauthenticated),
+                getString(R.string.unauthenticated)
+            )
+        }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        if (_binding == null) return
+
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.mapClickOverlay.visibility = if (isLoading) View.GONE else View.VISIBLE
+        binding.routeDeparture.visibility = if (isLoading) View.GONE else View.VISIBLE
+        binding.routeArrival.visibility = if (isLoading) View.GONE else View.VISIBLE
+    }
+
+    private fun fetchRoutes(truckId: Int) {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.getRoutes(truckId)
+
+                if (!isAdded) return@launch
+
+                if (response.isSuccessful) {
+                    val activeRoute = response.body()
+                        ?.firstOrNull { it.status == "EM ROTA" }
+
+                    if (activeRoute != null) {
+                        updateRouteDisplay(activeRoute.destinoInicial, activeRoute.destinoFinal)
+                    } else {
+                        updateRouteDisplay(getString(R.string.no_active_route), getString(R.string.no_active_route))
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Erro ao carregar rotas: ${response.code()}", Toast.LENGTH_LONG).show()
+                    updateRouteDisplay(getString(R.string.loading_error), getString(R.string.loading_error))
+                }
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro de conexão/API", Toast.LENGTH_LONG).show()
+                }
+                updateRouteDisplay(getString(R.string.loading_error), getString(R.string.loading_error))
             }
         }
+    }
+
+    private fun fetchMeters(truckId: Int) {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.getMeters(truckId)
+
+                if (!isAdded) return@launch
+
+                if (response.isSuccessful) {
+                    val meterData = response.body()
+
+                    if (meterData != null) {
+                        updateMetersDisplay(
+                            meterData.nivelCombustivel,
+                            meterData.cargaMotor,
+                            meterData.velocidadeVeiculo.toInt()
+                        )
+                    } else {
+                        updateMetersDisplay(0,0,0)
+                        Toast.makeText(requireContext(), "Dados dos medidores não retornaram",
+                            Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Erro ao carregar medidores: ${response.code()}", Toast.LENGTH_LONG).show()
+                    updateMetersDisplay(0,0,0)
+                }
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Log.e("API_CATCH", "Erro de conexão/API: ${e.message}", e)
+                    Toast.makeText(requireContext(), "Erro de conexão/API", Toast.LENGTH_LONG).show()
+                }
+                updateMetersDisplay(0,0,0)
+            }
+        }
+    }
+
+    private fun updateRouteDisplay(departure: String, arrival: String) {
+        if (_binding == null) return
+        binding.routeDeparture.text = departure
+        binding.routeArrival.text = arrival
+    }
+
+
+    private fun updateMetersDisplay(
+        fuelLevel: Int,
+        loadMotor: Int,
+        speed: Int
+    ) {
+        if (_binding == null) return
+
+        binding.progressBarFuel.progress = fuelLevel
+        binding.fuelStatus.text = "$fuelLevel% / 100"
+
+        binding.progressBarLoadMotor.progress = loadMotor
+        binding.loadMotorStatus.text = "$loadMotor% / 100"
+
+        binding.progressBarSpeed.progress = speed
+        binding.speedStats.text = "$speed% / 200"
+    }
+
+    private fun updateDriverDetailsDisplay(name: String, carModel: String, carPlate: String) {
+        if (_binding == null) return
+        binding.collaboratorName.text = name
+        binding.collaboratorCar.text = carModel
+        binding.collaboratorPlate.text = carPlate
     }
 
     @Suppress("DEPRECATION")
@@ -134,7 +253,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
-        // Desabilita TODOS os gestos. O mapa agora é uma imagem estática.
         googleMap.uiSettings.isScrollGesturesEnabled = false
         googleMap.uiSettings.isZoomGesturesEnabled = false
         googleMap.uiSettings.isTiltGesturesEnabled = false
@@ -154,25 +272,29 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             location?.let {
-                // Usa o DialogFragment para o efeito modal
                 val mapDialog = MapDialogFragment.newInstance(it.latitude, it.longitude)
                 mapDialog.show(childFragmentManager, MapDialogFragment.TAG)
-
             } ?: run {
                 Toast.makeText(requireContext(), getString(R.string.location_not_available), Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // NOVO: 1. Busca os dados do motorista (Nome e truckId)
+    private fun openAllRoutesModal(truckId: Int) {
+        val dialog = RoutesDialogFragment.newInstance(truckId)
+        dialog.show(childFragmentManager, RoutesDialogFragment.TAG)
+    }
+
     private fun fetchDriverAndTruckDetails(uid: String) {
-        // Assume que o UID do usuário é o ID do documento na coleção "driver"
+        showLoading(true)
+
         db.collection("driver").document(uid)
             .get()
             .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
+                if (!isAdded) return@addOnSuccessListener
+                showLoading(false)
 
-                    // 1. Puxa os dados diretamente do documento do motorista
+                if (document.exists()) {
                     val name = document.getString("name") ?: getString(R.string.data_not_found)
                     val carModel = document.getString("carModel") ?: getString(R.string.data_not_found)
                     val carPlate = document.getString("carPlate") ?: getString(R.string.data_not_found)
@@ -180,32 +302,29 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     val truckId = document.getLong("truckId")?.toInt()
                     if (truckId != null && truckId > 0) {
                         (activity as? MainActivity)?.truckId = truckId
+                        fetchRoutes(truckId)
+                        fetchMeters(truckId)
                     }
 
-                    // 2. Exibe os dados nos TextViews
-                    binding.collaboratorName.text = name
-                    binding.collaboratorCar.text = carModel
-                    binding.collaboratorPlate.text = carPlate
-
-                    // Lógica de navegação (mantida da sua lógica original)
-                    val currentItemId = (activity as? MainActivity)?.binding?.navbarInclude?.bottomNavigation?.selectedItemId
-                    when (currentItemId) {
-                        R.id.nav_manutencoes -> if (currentItemId != R.id.nav_home) (activity as? MainActivity)?.navigateToMaintenance()
-                        R.id.nav_avisos -> if (currentItemId != R.id.nav_home) (activity as? MainActivity)?.navigateToAlerts()
-                    }
+                    updateDriverDetailsDisplay(name, carModel, carPlate)
 
                 } else {
-                    // Documento do motorista não encontrado
-                    binding.collaboratorName.text = getString(R.string.loading_error)
-                    binding.collaboratorCar.text = getString(R.string.loading_error)
-                    binding.collaboratorPlate.text = getString(R.string.loading_error)
+                    updateDriverDetailsDisplay(
+                        getString(R.string.loading_error),
+                        getString(R.string.loading_error),
+                        getString(R.string.loading_error)
+                    )
                 }
             }
             .addOnFailureListener {
-                // Lidar com falha na conexão/consulta
-                binding.collaboratorName.text = getString(R.string.loading_error)
-                binding.collaboratorCar.text = getString(R.string.loading_error)
-                binding.collaboratorPlate.text = getString(R.string.loading_error)
+                if (!isAdded) return@addOnFailureListener
+                showLoading(false)
+
+                updateDriverDetailsDisplay(
+                    getString(R.string.loading_error),
+                    getString(R.string.loading_error),
+                    getString(R.string.loading_error)
+                )
                 Log.e("HomeFragment", "Falha ao buscar detalhes do motorista", it)
             }
     }
@@ -213,54 +332,42 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     @SuppressLint("MissingPermission")
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     private fun setupMapAndLocation() {
-        if (!isPermissionGranted) {
-            return
-        }
+        if (!isPermissionGranted) return
 
         googleMap.isMyLocationEnabled = true
 
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location: Location? ->
-                location?.let {
-                    val latLng = LatLng(it.latitude, it.longitude)
+        fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+            location?.let {
+                val latLng = LatLng(it.latitude, it.longitude)
+                val truckIcon = bitmapDescriptorFromVector(requireContext(), R.drawable.home_pin)
 
-                    val truckIcon = bitmapDescriptorFromVector(requireContext(), R.drawable.home_pin)
-
-                    googleMap.clear()
-
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12f))
-
-                    googleMap.addMarker(
-                        MarkerOptions()
-                            .position(latLng)
-                            .title(getString(R.string.marker_title))
-                            .icon(truckIcon)
-                    )
-                }
+                googleMap.clear()
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12f))
+                googleMap.addMarker(
+                    MarkerOptions()
+                        .position(latLng)
+                        .title(getString(R.string.marker_title))
+                        .icon(truckIcon)
+                )
             }
-            .addOnFailureListener {
-            }
+        }
     }
 
     @SuppressLint("MissingPermission")
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     private fun getLastKnownLocationAndUpdateUI() {
-        if (!isPermissionGranted) {
-            return
-        }
+        if (!isPermissionGranted) return
 
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location: Location? ->
-                location?.let {
-                    getCityFromLocation(it)
-                    setupMapAndLocation()
-                } ?: run {
-                    Toast.makeText(requireContext(), getString(R.string.location_not_available), Toast.LENGTH_SHORT).show()
-                }
+        fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+            location?.let {
+                getCityFromLocation(it)
+                setupMapAndLocation()
+            } ?: run {
+                Toast.makeText(requireContext(), getString(R.string.location_not_available), Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener {
-                Toast.makeText(requireContext(), getString(R.string.location_failed), Toast.LENGTH_SHORT).show()
-            }
+        }.addOnFailureListener {
+            Toast.makeText(requireContext(), getString(R.string.location_failed), Toast.LENGTH_SHORT).show()
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -285,8 +392,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             binding.approximateLocation.text = getString(R.string.unknown_error)
         }
     }
-
-    // A função fetchTruckIdAndSetInActivity antiga foi removida e substituída por fetchDriverDetails
 
     override fun onDestroyView() {
         super.onDestroyView()
