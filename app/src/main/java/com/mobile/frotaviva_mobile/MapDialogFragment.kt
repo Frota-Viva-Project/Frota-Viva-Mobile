@@ -12,7 +12,6 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
-import com.mobile.frotaviva_mobile.R
 
 class MapDialogFragment : DialogFragment(), OnMapReadyCallback {
 
@@ -51,24 +50,20 @@ class MapDialogFragment : DialogFragment(), OnMapReadyCallback {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Infla o novo layout de diálogo
         return inflater.inflate(R.layout.dialog_map_fullscreen, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Configuração para fechar o modal ao tocar fora
         dialog?.setCanceledOnTouchOutside(true)
 
-        // Obtém a referência ao mapa (Note que é childFragmentManager para um Fragment dentro de outro Fragment)
         val mapFragment = childFragmentManager.findFragmentById(R.id.full_screen_map) as SupportMapFragment?
         mapFragment?.getMapAsync(this)
     }
 
     override fun onResume() {
         super.onResume()
-        // Define o tamanho fixo (ou use WRAP_CONTENT/MATCH_PARENT conforme o layout)
         dialog?.window?.setLayout(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT
@@ -78,7 +73,6 @@ class MapDialogFragment : DialogFragment(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
 
-        // Habilita a navegação total, pois este é o modal interativo
         googleMap.uiSettings.isScrollGesturesEnabled = true
         googleMap.uiSettings.isZoomGesturesEnabled = true
         googleMap.uiSettings.isZoomControlsEnabled = true

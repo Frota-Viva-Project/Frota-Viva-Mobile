@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.firebase.appcheck.ktx)
     implementation(libs.firebase.appcheck.debug)
+    implementation(libs.androidx.work.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

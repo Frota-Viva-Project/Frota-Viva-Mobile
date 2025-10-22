@@ -19,6 +19,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -37,9 +39,11 @@ import com.mobile.frotaviva_mobile.R
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
 import com.mobile.frotaviva_mobile.fragments.RoutesDialogFragment
+import com.mobile.frotaviva_mobile.worker.LocationTrackingWorker
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
     private var _binding: FragmentHomeBinding? = null
@@ -99,7 +103,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 openAllRoutesModal(truckId)
             } else {
                 Toast.makeText(requireContext(), "Aguarde, carregando ID do caminhão...", Toast.LENGTH_SHORT).show()
-                // Você pode tentar buscar o ID do caminhão novamente aqui se necessário.
             }
         }
 
@@ -113,7 +116,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 fetchDriverAndTruckDetails(user.uid)
             }
         } else {
-            // Lidar com usuário não autenticado
             updateDriverDetailsDisplay(
                 getString(R.string.unauthenticated),
                 getString(R.string.unauthenticated),
@@ -285,8 +287,31 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         dialog.show(childFragmentManager, RoutesDialogFragment.TAG)
     }
 
+    private fun startLocationTrackingWorker(truckId: Int) {
+        val constraints = androidx.work.Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+
+        // O WorkManager garante um intervalo mínimo de 15 minutos para repetição
+        val locationWorkRequest = PeriodicWorkRequestBuilder<LocationTrackingWorker>(
+            15, TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .addTag(LocationTrackingWorker.WORK_TAG)
+            .build()
+
+        WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(
+            LocationTrackingWorker.WORK_TAG,
+            androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+            locationWorkRequest
+        )
+
+        Toast.makeText(requireContext(), "Rastreamento em background iniciado a cada 15 minutos.", Toast.LENGTH_SHORT).show()
+    }
+
     private fun fetchDriverAndTruckDetails(uid: String) {
         showLoading(true)
+        val sharedPref = requireActivity().getSharedPreferences("truck_prefs", Context.MODE_PRIVATE)
 
         db.collection("driver").document(uid)
             .get()
@@ -300,8 +325,19 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     val carPlate = document.getString("carPlate") ?: getString(R.string.data_not_found)
 
                     val truckId = document.getLong("truckId")?.toInt()
+                    val idMapsFromFirestore = document.getString("idMaps")
                     if (truckId != null && truckId > 0) {
                         (activity as? MainActivity)?.truckId = truckId
+
+                        with(sharedPref.edit()) {
+                            putInt("TRUCK_ID", truckId)
+                            putString("ID_MAPS", idMapsFromFirestore)
+                            apply()
+                        }
+
+                        // Inicia o WorkManager após obter o truckId e idMaps
+                        startLocationTrackingWorker(truckId)
+
                         fetchRoutes(truckId)
                         fetchMeters(truckId)
                     }
