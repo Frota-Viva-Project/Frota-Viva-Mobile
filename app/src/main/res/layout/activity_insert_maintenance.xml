@@ -7,8 +7,18 @@
     android:layout_height="match_parent"
     tools:context=".InsertMaintenance">
 
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone" app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
     <Button
-        android:id="@+id/buttonSeeMore2"
+        android:id="@+id/buttonSendMaintenance"
         android:layout_width="171dp"
         android:layout_height="40dp"
         android:layout_marginHorizontal="52dp"
@@ -20,7 +30,7 @@
         android:textStyle="bold"
         app:backgroundTint="@null"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/statusManInput" />
+        app:layout_constraintTop_toBottomOf="@+id/descriptionManInput" />
 
     <EditText
         android:id="@+id/titleManInput"
@@ -60,46 +70,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/titleManInput" />
 
-    <EditText
-        android:id="@+id/dateManInput"
-        android:layout_width="307dp"
-        android:layout_height="56dp"
-        android:layout_marginHorizontal="52dp"
-        android:layout_marginTop="24dp"
-        android:autofillHints="emailAddress"
-        android:background="@drawable/rounded_edittext_background"
-        android:hint="Data do Ocorrido"
-        android:inputType="textEmailAddress"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:textColor="@color/primary_default"
-        android:textColorHint="#999999"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.403"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/descriptionManInput" />
-
-    <EditText
-        android:id="@+id/statusManInput"
-        android:layout_width="307dp"
-        android:layout_height="56dp"
-        android:layout_marginHorizontal="52dp"
-        android:layout_marginTop="24dp"
-        android:autofillHints="emailAddress"
-        android:background="@drawable/rounded_edittext_background"
-        android:hint="Status"
-        android:inputType="textEmailAddress"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:textColor="@color/primary_default"
-        android:textColorHint="#999999"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.615"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/dateManInput" />
-
     <TextView
         android:id="@+id/textView8"
         android:layout_width="wrap_content"
@@ -111,10 +81,10 @@
         android:textFontWeight="900"
         android:textSize="22sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageView13" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonBack" />
 
     <ImageView
-        android:id="@+id/imageView13"
+        android:id="@+id/buttonBack"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_marginStart="24dp"

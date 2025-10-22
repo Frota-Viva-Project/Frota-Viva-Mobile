@@ -33,11 +33,26 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
+            <Button
+                android:id="@+id/buttonAddMaintenance"
+                android:layout_width="204dp"
+                android:layout_height="40dp"
+                android:layout_marginHorizontal="52dp"
+                android:layout_marginStart="1dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/rounded_button_background"
+                android:text="Criar Manutenção"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:backgroundTint="@null"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/constraintLayout2" />
+
             <TextView
                 android:id="@+id/alertsTitle2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
                 android:layout_marginTop="24dp"
                 android:fontFamily="@font/inter_semibold"
                 android:text="Histórico de Manutenções do Veículo"
@@ -50,13 +65,13 @@
                 android:id="@+id/constraintLayout2"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
-                android:layout_marginStart="8dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginEnd="8dp"
                 android:background="@drawable/rounded_edittext_background"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/alertsTitle2">
+
                 <ImageView
                     android:id="@+id/imageView7"
                     android:layout_width="16dp"
@@ -80,30 +95,16 @@
                     app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <Button
-                android:id="@+id/button"
-                android:layout_width="160dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/rounded_button_background"
-                android:backgroundTint="@color/primary_default"
-                android:text="Acessar Histórico"
-                android:textFontWeight="700"
-                android:textSize="12sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/constraintLayout2" />
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/maintenances_recycler_view"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/button"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:layout_marginBottom="16dp"
+                app:layout_constraintTop_toBottomOf="@+id/buttonAddMaintenance"
                 tools:listitem="@layout/maintenance_item" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
