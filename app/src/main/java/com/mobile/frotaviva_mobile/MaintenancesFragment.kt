@@ -1,7 +1,9 @@
 package com.mobile.frotaviva_mobile.fragments
 
 import VerticalSpaceItemDecoration
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
 import android.util.TypedValue
@@ -14,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.mobile.frotaviva_mobile.InsertMaintenance
 import com.mobile.frotaviva_mobile.adapter.MaintenanceAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentMaintenancesBinding
@@ -27,16 +30,41 @@ class MaintenancesFragment : Fragment() {
 
     companion object {
         const val TRUCK_ID_KEY = "truckId"
+        const val RELOAD_KEY = "RELOAD_MAINTENANCES"
     }
 
     private var _binding: FragmentMaintenancesBinding? = null
     private val binding get() = _binding!!
+
+    private val insertMaintenanceLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            val shouldReload = data?.getBooleanExtra(RELOAD_KEY, false) ?: false
+
+            if (shouldReload) {
+                fetchTruckIdAndLoadData()
+                Toast.makeText(requireContext(), "Lista de manutenções atualizada.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentMaintenancesBinding.inflate(inflater, container, false)
+        binding.buttonAddMaintenance.setOnClickListener {
+            val context = requireContext()
+            val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
+
+            val intent = Intent(context, InsertMaintenance::class.java).apply {
+                putExtra(TRUCK_ID_KEY, truckIdFromBundle)
+            }
+
+            insertMaintenanceLauncher.launch(intent)
+        }
         return binding.root
     }
 
@@ -71,7 +99,6 @@ class MaintenancesFragment : Fragment() {
         val db = FirebaseFirestore.getInstance()
 
         if (user == null) {
-            // Usa requireContext() para garantir que o Context é válido.
             Toast.makeText(requireContext(), "Usuário não autenticado", Toast.LENGTH_LONG).show()
             setupRecyclerView(emptyList())
             return
@@ -187,7 +214,6 @@ class MaintenancesFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Este é o ponto onde o binding é limpo.
         _binding = null
     }
 }
