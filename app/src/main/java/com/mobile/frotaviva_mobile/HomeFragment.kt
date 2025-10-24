@@ -19,6 +19,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -37,9 +41,11 @@ import com.mobile.frotaviva_mobile.R
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
 import com.mobile.frotaviva_mobile.fragments.RoutesDialogFragment
+import com.mobile.frotaviva_mobile.worker.LocationTrackingWorker
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
     private var _binding: FragmentHomeBinding? = null
@@ -99,7 +105,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 openAllRoutesModal(truckId)
             } else {
                 Toast.makeText(requireContext(), "Aguarde, carregando ID do caminhão...", Toast.LENGTH_SHORT).show()
-                // Você pode tentar buscar o ID do caminhão novamente aqui se necessário.
             }
         }
 
@@ -113,7 +118,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 fetchDriverAndTruckDetails(user.uid)
             }
         } else {
-            // Lidar com usuário não autenticado
             updateDriverDetailsDisplay(
                 getString(R.string.unauthenticated),
                 getString(R.string.unauthenticated),
@@ -216,7 +220,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.loadMotorStatus.text = "$loadMotor% / 100"
 
         binding.progressBarSpeed.progress = speed
-        binding.speedStats.text = "$speed% / 200"
+        binding.speedStats.text = "$speed / 200"
     }
 
     private fun updateDriverDetailsDisplay(name: String, carModel: String, carPlate: String) {
@@ -285,8 +289,30 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         dialog.show(childFragmentManager, RoutesDialogFragment.TAG)
     }
 
+    private fun startLocationTrackingWorker() {
+        val constraints = androidx.work.Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+
+        val locationWorkRequest = PeriodicWorkRequest.Builder(
+            LocationTrackingWorker::class.java,
+            15, // Intervalo de repetição
+            TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .addTag(LocationTrackingWorker.WORK_TAG)
+            .build()
+
+        WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(
+            LocationTrackingWorker.WORK_TAG, // Nome único para a fila
+            ExistingPeriodicWorkPolicy.UPDATE, // Atualiza se a política já existir
+            locationWorkRequest
+        )
+    }
+
     private fun fetchDriverAndTruckDetails(uid: String) {
         showLoading(true)
+        val sharedPref = requireActivity().getSharedPreferences("truck_prefs", Context.MODE_PRIVATE)
 
         db.collection("driver").document(uid)
             .get()
@@ -300,8 +326,22 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     val carPlate = document.getString("carPlate") ?: getString(R.string.data_not_found)
 
                     val truckId = document.getLong("truckId")?.toInt()
-                    if (truckId != null && truckId > 0) {
+
+                    var idMapsFromFirestore: Int? = 0
+
+                    idMapsFromFirestore = document.getLong("idMaps")?.toInt()
+
+                    if (truckId != null && truckId > 0 && idMapsFromFirestore !=null && idMapsFromFirestore >0) {
                         (activity as? MainActivity)?.truckId = truckId
+
+                        with(sharedPref.edit()) {
+                            putInt("TRUCK_ID", truckId)
+                            putInt("ID_MAPS", idMapsFromFirestore)
+                            apply()
+                        }
+
+                        startLocationTrackingWorker()
+
                         fetchRoutes(truckId)
                         fetchMeters(truckId)
                     }
