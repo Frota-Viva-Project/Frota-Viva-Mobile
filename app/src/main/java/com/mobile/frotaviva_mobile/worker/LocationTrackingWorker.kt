@@ -30,33 +30,43 @@ class LocationTrackingWorker(
         const val WORK_TAG = "LocationTrackingWork"
         private const val TRUCK_ID_PREF_KEY = "TRUCK_ID"
         private const val ID_MAPS_PREF_KEY = "ID_MAPS"
+        private const val LOG_TAG_DATA = "TRACK_DATA" // Nova tag para dados de localização (Substitui "RUBERTS")
     }
 
     override suspend fun doWork(): Result {
-        val truckId = sharedPref.getInt(TRUCK_ID_PREF_KEY, 0)
-        val idMaps = sharedPref.getString(ID_MAPS_PREF_KEY, null)
+        val truckId: Int = sharedPref.getInt(TRUCK_ID_PREF_KEY, 0)
+        val idMapsInt: Int = sharedPref.getInt(ID_MAPS_PREF_KEY, 0)
+
+        // Converte o ID_MAPS para String se for um valor válido, caso contrário, será null
+        val idMaps: String? = if (idMapsInt > 0) idMapsInt.toString() else null
+
+        Log.d(WORK_TAG, "Iniciando doWork(). Truck ID: $truckId. ID Maps: $idMaps")
 
         if (truckId <= 0) {
-            Log.e(WORK_TAG, "Truck ID não encontrado.")
+            Log.e(WORK_TAG, "Truck ID não encontrado nas preferências. Falha.")
             return Result.failure()
         }
 
         try {
-            val location = getLastLocation()
+            val location: Location? = getLastLocation()
             if (location == null) {
-                Log.w(WORK_TAG, "Localização indisponível. Tentando novamente.")
-                return Result.retry()
+                Log.w(WORK_TAG, "Localização indisponível. Tentando novamente na próxima execução.")
+                // Retorna sucesso para não tentar imediatamente, mas sim no próximo ciclo periódico
+                return Result.success()
             }
 
             val locationData = LocationUpdateRequest(
                 truckId = truckId,
                 latitude = location.latitude,
                 longitude = location.longitude,
-                timestamp = System.currentTimeMillis()
+                capturaLocalizacaoMl = System.currentTimeMillis()
             )
 
+            // Log de Dados de Localização (Seu antigo "RUBERTS")
+            Log.i(LOG_TAG_DATA, "Lat/Lng obtida: ${locationData.latitude}, ${locationData.longitude}")
+
             if (idMaps.isNullOrEmpty()) {
-                handlePostLocation(truckId, locationData)
+                handlePostLocation(locationData)
             } else {
                 handlePutLocation(idMaps, locationData)
             }
@@ -72,16 +82,17 @@ class LocationTrackingWorker(
         }
     }
 
-    private suspend fun handlePostLocation(truckId: Int, locationData: LocationUpdateRequest) {
+    // Removendo o truckId do parâmetro pois ele já está em locationData
+    private suspend fun handlePostLocation(locationData: LocationUpdateRequest) {
         val response = RetrofitClient.instance.postLocation(locationData)
+        val truckId = locationData.truckId
 
         if (response.isSuccessful) {
-            val responseBody = response.body()
-            val newIdMaps = responseBody?.idMaps
+            val newIdMaps = response.body()
 
-            if (!newIdMaps.isNullOrEmpty()) {
+            if (newIdMaps != null) {
                 with(sharedPref.edit()) {
-                    putString(ID_MAPS_PREF_KEY, newIdMaps)
+                    putInt(ID_MAPS_PREF_KEY, newIdMaps)
                     apply()
                 }
 
@@ -106,6 +117,8 @@ class LocationTrackingWorker(
         val response = RetrofitClient.instance.putLocation(idMaps, locationData)
 
         if (response.isSuccessful) {
+            // Logs de dados transferidos
+            Log.i(LOG_TAG_DATA, "PUT: Lat/Lng: ${locationData.latitude}, ${locationData.longitude}")
             Log.i(WORK_TAG, "PUT bem-sucedido para ID Maps: $idMaps")
         } else {
             val errorBody = response.errorBody()?.string()

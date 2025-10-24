@@ -19,6 +19,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -218,7 +220,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.loadMotorStatus.text = "$loadMotor% / 100"
 
         binding.progressBarSpeed.progress = speed
-        binding.speedStats.text = "$speed% / 200"
+        binding.speedStats.text = "$speed / 200"
     }
 
     private fun updateDriverDetailsDisplay(name: String, carModel: String, carPlate: String) {
@@ -287,26 +289,25 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         dialog.show(childFragmentManager, RoutesDialogFragment.TAG)
     }
 
-    private fun startLocationTrackingWorker(truckId: Int) {
+    private fun startLocationTrackingWorker() {
         val constraints = androidx.work.Constraints.Builder()
             .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
             .build()
 
-        // O WorkManager garante um intervalo mínimo de 15 minutos para repetição
-        val locationWorkRequest = PeriodicWorkRequestBuilder<LocationTrackingWorker>(
-            15, TimeUnit.MINUTES
+        val locationWorkRequest = PeriodicWorkRequest.Builder(
+            LocationTrackingWorker::class.java,
+            15, // Intervalo de repetição
+            TimeUnit.MINUTES
         )
             .setConstraints(constraints)
             .addTag(LocationTrackingWorker.WORK_TAG)
             .build()
 
         WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(
-            LocationTrackingWorker.WORK_TAG,
-            androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+            LocationTrackingWorker.WORK_TAG, // Nome único para a fila
+            ExistingPeriodicWorkPolicy.UPDATE, // Atualiza se a política já existir
             locationWorkRequest
         )
-
-        Toast.makeText(requireContext(), "Rastreamento em background iniciado a cada 15 minutos.", Toast.LENGTH_SHORT).show()
     }
 
     private fun fetchDriverAndTruckDetails(uid: String) {
@@ -325,18 +326,21 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     val carPlate = document.getString("carPlate") ?: getString(R.string.data_not_found)
 
                     val truckId = document.getLong("truckId")?.toInt()
-                    val idMapsFromFirestore = document.getString("idMaps")
-                    if (truckId != null && truckId > 0) {
+
+                    var idMapsFromFirestore: Int? = 0
+
+                    idMapsFromFirestore = document.getLong("idMaps")?.toInt()
+
+                    if (truckId != null && truckId > 0 && idMapsFromFirestore !=null && idMapsFromFirestore >0) {
                         (activity as? MainActivity)?.truckId = truckId
 
                         with(sharedPref.edit()) {
                             putInt("TRUCK_ID", truckId)
-                            putString("ID_MAPS", idMapsFromFirestore)
+                            putInt("ID_MAPS", idMapsFromFirestore)
                             apply()
                         }
 
-                        // Inicia o WorkManager após obter o truckId e idMaps
-                        startLocationTrackingWorker(truckId)
+                        startLocationTrackingWorker()
 
                         fetchRoutes(truckId)
                         fetchMeters(truckId)

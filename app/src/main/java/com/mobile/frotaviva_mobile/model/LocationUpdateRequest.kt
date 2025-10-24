@@ -4,5 +4,5 @@ data class LocationUpdateRequest(
     val truckId: Int,
     val latitude: Double,
     val longitude: Double,
-    val timestamp: Long = System.currentTimeMillis()
+    val capturaLocalizacaoMl: Long = System.currentTimeMillis()
 )

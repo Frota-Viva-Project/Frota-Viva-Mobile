@@ -44,7 +44,7 @@ interface ApiService {
     @POST("maps")
     suspend fun postLocation(
         @Body request: LocationUpdateRequest
-    ): Response<LocationPostResponse>
+    ): Response<Int>
 
     @PUT("maps/{idMaps}")
     suspend fun putLocation(
