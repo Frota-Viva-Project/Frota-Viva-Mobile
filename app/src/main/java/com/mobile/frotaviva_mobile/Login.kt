@@ -5,17 +5,22 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.ActivityLoginBinding
 import com.mobile.frotaviva_mobile.firebase.FirebaseManager
+import com.mobile.frotaviva_mobile.storage.SecureStorage
+import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseUser
+import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 
 class Login : AppCompatActivity() {
     private lateinit var firebaseManager: FirebaseManager
     private lateinit var binding: ActivityLoginBinding
+    private lateinit var secureStorage: SecureStorage
 
     override fun onCreate(savedInstanceState: Bundle?) {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
@@ -25,14 +30,16 @@ class Login : AppCompatActivity() {
 
         firebaseManager = FirebaseManager()
         FirebaseApp.initializeApp(this)
+        secureStorage = SecureStorage(this)
 
-        if (firebaseManager.isUserLoggedIn()) {
+        RetrofitClient.initialize(applicationContext)
+
+        if (firebaseManager.isUserLoggedIn() && secureStorage.getToken() != null) {
             redirectToMain()
             return
         }
 
         binding.navigateToRegister.setOnClickListener {
-            // Navega para a tela de cadastro
             startActivity(Intent(this, Register::class.java))
         }
 
@@ -47,19 +54,56 @@ class Login : AppCompatActivity() {
 
             loginUser(email, password)
         }
-
-        FirebaseApp.initializeApp(this)
     }
 
     private fun loginUser(email: String, password: String) {
         firebaseManager.loginUser(email, password,
-            onSuccess = {
-                redirectToMain()
+            onSuccess = { firebaseUser ->
+                getFirebaseTokenAndExchange(firebaseUser)
             },
             onFailure = { exception ->
                 handleLoginError(exception)
             }
         )
+    }
+
+    private fun getFirebaseTokenAndExchange(firebaseUser: FirebaseUser) {
+        firebaseUser.getIdToken(true)
+            .addOnSuccessListener { result ->
+                val firebaseIdToken = result.token
+                if (firebaseIdToken != null) {
+                    exchangeTokenWithBackend(firebaseIdToken)
+                } else {
+                    handleLoginError(null)
+                }
+            }
+            .addOnFailureListener { e ->
+                handleLoginError(e)
+            }
+    }
+
+    private fun exchangeTokenWithBackend(firebaseIdToken: String) {
+        lifecycleScope.launch {
+            try {
+                val authService = RetrofitClient.instance
+
+                val request = TokenExchangeRequest(firebaseToken = firebaseIdToken)
+
+                val response = authService.exchangeFirebaseToken(request)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val yourJwt = response.body()!!.jwt
+
+                    secureStorage.saveToken(yourJwt)
+
+                    redirectToMain()
+                } else {
+                    Toast.makeText(this@Login, "Falha de autorização no servidor.", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@Login, "Erro de conexão com o servidor.", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun redirectToMain() {

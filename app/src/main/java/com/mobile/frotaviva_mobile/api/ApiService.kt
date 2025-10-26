@@ -1,5 +1,7 @@
 package com.mobile.frotaviva_mobile.api
 
+import com.mobile.frotaviva_mobile.auth.LoginResponse
+import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 import com.mobile.frotaviva_mobile.model.Maintenance
 import com.mobile.frotaviva_mobile.model.Alert
 import com.mobile.frotaviva_mobile.model.AlertRequest
@@ -58,4 +60,9 @@ interface ApiService {
         @Path("idMaps") idMaps: String,
         @Body request: LocationUpdateRequest
     ): Response<Unit>
+
+    @POST("/api/auth/firebase")
+    suspend fun exchangeFirebaseToken(
+        @Body request: TokenExchangeRequest
+    ): Response<LoginResponse>
 }

@@ -39,13 +39,13 @@ class FirebaseManager {
         } ?: onFailure(Exception("Usuário não está logado"))
     }
 
-    fun loginUser(email: String, password: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+    fun loginUser(email: String, password: String, onSuccess: (FirebaseUser) -> Unit, onFailure: (Exception) -> Unit) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    onSuccess()
+                    onSuccess(task.result.user!!)
                 } else {
-                    task.exception?.let { onFailure(it) }
+                    onFailure(task.exception!!)
                 }
             }
     }
