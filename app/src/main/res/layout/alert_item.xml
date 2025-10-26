@@ -2,7 +2,10 @@
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="345dp"
+    android:layout_width="match_parent"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="6dp"
+    app:cardElevation="2dp"
     android:layout_height="wrap_content"
     android:background="@color/primary_default"
     app:cardBackgroundColor="@color/primary_default"
@@ -11,6 +14,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:padding="16dp"
         tools:layout_editor_absoluteX="1dp"
         tools:layout_editor_absoluteY="128dp">
 
@@ -18,8 +22,6 @@
             android:id="@+id/imageView5"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/warning" />
@@ -29,19 +31,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
             android:fontFamily="@font/inter_bold"
             android:text="Aviso Urgente"
             android:textColor="@color/neutral_100"
             android:textSize="16sp"
             app:layout_constraintStart_toEndOf="@+id/imageView5"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="@+id/imageView5" />
 
         <TextView
             android:id="@+id/manInfo"
             android:layout_width="59dp"
             android:layout_height="17dp"
-            android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:fontFamily="@font/inter_regular"
             android:text="Categoria:"
@@ -55,8 +55,7 @@
             android:id="@+id/alertCat2"
             android:layout_width="59dp"
             android:layout_height="17dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="16dp"
             android:fontFamily="@font/inter_regular"
             android:text="Descrição:"
             android:textColor="@color/neutral_100"
@@ -70,34 +69,32 @@
             android:layout_width="48dp"
             android:layout_height="17dp"
             android:layout_marginStart="4dp"
-            android:layout_marginTop="16dp"
             android:fontFamily="@font/inter_regular"
             android:text="Urgente"
             android:textColor="@color/neutral_100"
             android:textFontWeight="0"
             android:textSize="12sp"
             app:layout_constraintStart_toEndOf="@+id/manInfo"
-            app:layout_constraintTop_toBottomOf="@+id/alertTitle" />
+            app:layout_constraintTop_toTopOf="@+id/manInfo" />
 
         <TextView
             android:id="@+id/alertCatDesc"
             android:layout_width="243dp"
             android:layout_height="16dp"
             android:layout_marginStart="4dp"
-            android:layout_marginTop="12dp"
             android:fontFamily="@font/inter_regular"
             android:text="Temperatura do Motor maior que 105 °C"
             android:textColor="@color/neutral_100"
             android:textFontWeight="0"
             android:textSize="12sp"
             app:layout_constraintStart_toEndOf="@+id/alertCat2"
-            app:layout_constraintTop_toBottomOf="@+id/alertCatInfo" />
+            app:layout_constraintTop_toTopOf="@+id/alertCat2" />
 
         <!-- Botão Solicitar Serviço -->
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/constraintLayout5"
-            android:layout_width="313dp"
+            android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_marginTop="16dp"
             android:background="@drawable/rounded_secondary_button_background"
@@ -123,10 +120,9 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/constraintLayout6"
-            android:layout_width="313dp"
+            android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"
             android:background="@drawable/rounded_button_background"
             android:clickable="true"
             android:focusable="true"
