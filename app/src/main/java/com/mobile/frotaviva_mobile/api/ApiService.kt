@@ -1,7 +1,10 @@
 package com.mobile.frotaviva_mobile.api
 
+import com.mobile.frotaviva_mobile.auth.LoginResponse
+import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 import com.mobile.frotaviva_mobile.model.Maintenance
 import com.mobile.frotaviva_mobile.model.Alert
+import com.mobile.frotaviva_mobile.model.AlertRequest
 import com.mobile.frotaviva_mobile.model.LocationPostResponse
 import com.mobile.frotaviva_mobile.model.LocationUpdateRequest
 import com.mobile.frotaviva_mobile.model.MaintenanceRequest
@@ -41,6 +44,12 @@ interface ApiService {
         @Body request: MaintenanceRequest
     ): Response<Unit>
 
+    @POST("alerta/{id}")
+    suspend fun sendAlert(
+        @Path("id") id: Int,
+        @Body request: AlertRequest
+    ): Response<Unit>
+
     @POST("maps")
     suspend fun postLocation(
         @Body request: LocationUpdateRequest
@@ -51,4 +60,9 @@ interface ApiService {
         @Path("idMaps") idMaps: String,
         @Body request: LocationUpdateRequest
     ): Response<Unit>
+
+    @POST("/v1/api/auth/firebase")
+    suspend fun exchangeFirebaseToken(
+        @Body request: TokenExchangeRequest
+    ): Response<LoginResponse>
 }

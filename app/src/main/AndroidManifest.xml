@@ -19,6 +19,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FrotaVivaMobile"
         tools:targetApi="31">
+        <activity
+            android:name=".InsertAlert"
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -36,13 +39,13 @@
         </activity>
         <activity
             android:name=".AlertsFragment"
-            android:exported="false"></activity>
-      <activity
+            android:exported="false" />
+        <activity
             android:name=".InsertMaintenance"
             android:exported="false" />
         <activity
             android:name=".MaintenancesFragment"
-            android:exported="false"></activity>
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="false" />
