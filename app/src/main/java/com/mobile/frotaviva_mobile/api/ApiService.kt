@@ -61,7 +61,7 @@ interface ApiService {
         @Body request: LocationUpdateRequest
     ): Response<Unit>
 
-    @POST("/api/auth/firebase")
+    @POST("/v1/api/auth/firebase")
     suspend fun exchangeFirebaseToken(
         @Body request: TokenExchangeRequest
     ): Response<LoginResponse>

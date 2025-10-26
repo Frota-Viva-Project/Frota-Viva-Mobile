@@ -87,12 +87,12 @@ class Login : AppCompatActivity() {
             try {
                 val authService = RetrofitClient.instance
 
-                val request = TokenExchangeRequest(firebaseToken = firebaseIdToken)
+                val request = TokenExchangeRequest(firebaseIdToken = firebaseIdToken)
 
                 val response = authService.exchangeFirebaseToken(request)
 
                 if (response.isSuccessful && response.body() != null) {
-                    val yourJwt = response.body()!!.jwt
+                    val yourJwt = response.body()!!.token
 
                     secureStorage.saveToken(yourJwt)
 
