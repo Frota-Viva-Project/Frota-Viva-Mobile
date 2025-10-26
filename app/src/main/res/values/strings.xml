@@ -36,4 +36,6 @@
     <string name="no_active_route">nenhuma rota ativa foi encontrada!</string>
     <string name="no_meters">Os medidores nao foram encontrados!</string>
     <string name="unauthenticated">Usuário nao autenticado</string>
+    <string name="navigation_drawer_open">Abrido</string>
+    <string name="navigation_drawer_close">Fechado</string>
 </resources>

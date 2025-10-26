@@ -1,0 +1,34 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/home_page"
+            android:title="Home" />
+        <item
+            android:id="@+id/nav_avisos"
+            android:icon="@drawable/group_1"
+            android:title="Avisos" />
+        <item
+            android:id="@+id/nav_manutencoes"
+            android:icon="@drawable/gears"
+            android:title="Manutenções" />
+        <item
+            android:id="@+id/nav_perfil"
+            android:icon="@drawable/edit_profile_image"
+            android:title="Perfil" />
+    </group>
+
+    <group
+        android:checkableBehavior="single"
+        android:id="@+id/group_secondary"
+        >
+        <item
+            android:id="@+id/nav_ajuda"
+            android:icon="@drawable/help"
+            android:title="Ajuda" />
+    </group>
+
+</menu>
