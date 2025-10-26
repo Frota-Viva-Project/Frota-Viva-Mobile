@@ -1,7 +1,9 @@
 package com.mobile.frotaviva_mobile.fragments
 
 import VerticalSpaceItemDecoration
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
 import android.util.TypedValue
@@ -14,10 +16,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.mobile.frotaviva_mobile.InsertAlert
+import com.mobile.frotaviva_mobile.InsertMaintenance
 import com.mobile.frotaviva_mobile.R
 import com.mobile.frotaviva_mobile.adapter.AlertAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentAlertsBinding
+import com.mobile.frotaviva_mobile.databinding.FragmentMaintenancesBinding
 import com.mobile.frotaviva_mobile.model.Alert
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -25,17 +30,42 @@ import kotlinx.coroutines.tasks.await
 class AlertsFragment : Fragment() {
 
     companion object {
+        const val RELOAD_KEY = "RELOAD_MAINTENANCES"
         const val TRUCK_ID_KEY = "truckId"
     }
 
     private var _binding: FragmentAlertsBinding? = null
     private val binding get() = _binding!!
 
+    private val insertAlertLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            val shouldReload = data?.getBooleanExtra(AlertsFragment.Companion.RELOAD_KEY, false) ?: false
+
+            if (shouldReload) {
+                fetchTruckIdAndLoadData()
+                Toast.makeText(requireContext(), "Lista de alertas atualizada.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentAlertsBinding.inflate(inflater, container, false)
+        binding.buttonAddAlert.setOnClickListener {
+            val context = requireContext()
+            val truckIdFromBundle = arguments?.getInt(AlertsFragment.Companion.TRUCK_ID_KEY, 0)
+
+            val intent = Intent(context, InsertAlert::class.java).apply {
+                putExtra(AlertsFragment.Companion.TRUCK_ID_KEY, truckIdFromBundle)
+            }
+
+            insertAlertLauncher.launch(intent)
+        }
         return binding.root
     }
 

@@ -2,6 +2,7 @@ package com.mobile.frotaviva_mobile.api
 
 import com.mobile.frotaviva_mobile.model.Maintenance
 import com.mobile.frotaviva_mobile.model.Alert
+import com.mobile.frotaviva_mobile.model.AlertRequest
 import com.mobile.frotaviva_mobile.model.LocationPostResponse
 import com.mobile.frotaviva_mobile.model.LocationUpdateRequest
 import com.mobile.frotaviva_mobile.model.MaintenanceRequest
@@ -39,6 +40,12 @@ interface ApiService {
     suspend fun sendMaintenance(
         @Path("id") id: Int,
         @Body request: MaintenanceRequest
+    ): Response<Unit>
+
+    @POST("alerta/{id}")
+    suspend fun sendAlert(
+        @Path("id") id: Int,
+        @Body request: AlertRequest
     ): Response<Unit>
 
     @POST("maps")

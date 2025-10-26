@@ -5,57 +5,38 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".InsertMaintenance">
+    tools:context=".InsertAlert">
 
     <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyle"
+        android:id="@+id/progressBar3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone" app:layout_constraintTop_toTopOf="parent"
+        android:layout_gravity="center"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <EditText
-        android:id="@+id/titleManInput"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:layout_marginHorizontal="52dp"
-        android:layout_marginTop="24dp"
-        android:autofillHints="emailAddress"
-        android:background="@drawable/rounded_edittext_background"
-        android:hint="Titulo da Manutenção"
-        android:inputType="textEmailAddress"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:textColor="@color/primary_default"
-        android:textColorHint="#999999"
-        android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView8" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/textView8"
+        android:id="@+id/textView21"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="24dp"
-        android:text="Inserir Manutenção"
+        android:text="Inserir Aviso"
         android:textColor="@color/neutral_700"
         android:textFontWeight="900"
         android:textSize="22sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonBack" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonBackAlert" />
 
     <Button
-        android:id="@+id/buttonSendMaintenance"
+        android:id="@+id/buttonSendAlert"
         android:layout_width="171dp"
         android:layout_height="40dp"
         android:layout_marginHorizontal="52dp"
         android:layout_marginTop="24dp"
-        android:layout_marginEnd="52dp"
         android:background="@drawable/rounded_button_background"
         android:text="Inserir"
         android:textColor="@android:color/white"
@@ -63,21 +44,10 @@
         android:textStyle="bold"
         app:backgroundTint="@null"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/descriptionManInput" />
-
-    <ImageView
-        android:id="@+id/buttonBack"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="80dp"
-        android:rotation="180"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/arrow_forward" />
+        app:layout_constraintTop_toBottomOf="@+id/categoryAlertInput" />
 
     <EditText
-        android:id="@+id/descriptionManInput"
+        android:id="@+id/descriptionAlertInput"
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginHorizontal="52dp"
@@ -93,6 +63,54 @@
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/titleManInput" />
+        app:layout_constraintTop_toBottomOf="@+id/titleAlertInput" />
 
+    <EditText
+        android:id="@+id/categoryAlertInput"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="52dp"
+        android:layout_marginTop="24dp"
+        android:autofillHints="emailAddress"
+        android:background="@drawable/rounded_edittext_background"
+        android:hint="Categoria"
+        android:inputType="textEmailAddress"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/primary_default"
+        android:textColorHint="#999999"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/descriptionAlertInput" />
+
+    <ImageView
+        android:id="@+id/buttonBackAlert"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="80dp"
+        android:rotation="180"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/arrow_forward" />
+
+    <EditText
+        android:id="@+id/titleAlertInput"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="52dp"
+        android:layout_marginTop="24dp"
+        android:autofillHints="emailAddress"
+        android:background="@drawable/rounded_edittext_background"
+        android:hint="Titulo do Alerta"
+        android:inputType="textEmailAddress"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="@color/primary_default"
+        android:textColorHint="#999999"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView21" />
 </androidx.constraintlayout.widget.ConstraintLayout>

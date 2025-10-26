@@ -31,6 +31,21 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
+        <Button
+            android:id="@+id/buttonAddAlert"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginHorizontal="52dp"
+            android:layout_marginStart="16dp"
+            android:background="@drawable/rounded_button_background"
+            android:text="Criar Aviso"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:backgroundTint="@null"
+            app:layout_constraintStart_toEndOf="@+id/dropdownContainer"
+            app:layout_constraintTop_toTopOf="@+id/dropdownContainer" />
+
         <TextView
             android:id="@+id/alertsTitle"
             android:layout_width="wrap_content"
@@ -47,7 +62,7 @@
         <FrameLayout
             android:id="@+id/dropdownContainer"
             android:layout_width="176dp"
-            android:layout_height="32dp"
+            android:layout_height="40dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="20dp"
             app:layout_constraintStart_toStartOf="parent"
