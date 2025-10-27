@@ -15,6 +15,7 @@ import com.mobile.frotaviva_mobile.firebase.FirebaseManager
 import com.mobile.frotaviva_mobile.storage.SecureStorage
 import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseUser
+import com.mobile.frotaviva_mobile.auth.JwtUtils
 import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 
 class Login : AppCompatActivity() {
@@ -34,10 +35,7 @@ class Login : AppCompatActivity() {
 
         RetrofitClient.initialize(applicationContext)
 
-        if (firebaseManager.isUserLoggedIn() && secureStorage.getToken() != null) {
-            redirectToMain()
-            return
-        }
+        checkPersistentLogin() // CHAMA A VERIFICAÇÃO DE LOGIN IMEDIATAMENTE
 
         binding.navigateToRegister.setOnClickListener {
             startActivity(Intent(this, Register::class.java))
@@ -120,5 +118,15 @@ class Login : AppCompatActivity() {
             else -> exception?.localizedMessage ?: "Erro desconhecido. Tente novamente."
         }
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+    }
+
+    private fun checkPersistentLogin() {
+        val token = secureStorage.getToken()
+
+        if (!token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token)) {
+            redirectToMain()
+        } else {
+            secureStorage.clearToken()
+        }
     }
 }

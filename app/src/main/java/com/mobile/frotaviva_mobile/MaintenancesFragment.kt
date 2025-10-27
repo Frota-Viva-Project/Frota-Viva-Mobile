@@ -1,11 +1,12 @@
-package com.mobile.frotaviva_mobile.fragments
+package com.mobile.frotaviva_mobile
 
 import VerticalSpaceItemDecoration
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
@@ -16,15 +17,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.mobile.frotaviva_mobile.InsertMaintenance
 import com.mobile.frotaviva_mobile.adapter.MaintenanceAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentMaintenancesBinding
 import com.mobile.frotaviva_mobile.model.Maintenance
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.Calendar
-import java.util.Date
+import java.util.Locale
 
 class MaintenancesFragment : Fragment() {
 
@@ -35,6 +34,10 @@ class MaintenancesFragment : Fragment() {
 
     private var _binding: FragmentMaintenancesBinding? = null
     private val binding get() = _binding!!
+
+    private lateinit var maintenanceAdapter: MaintenanceAdapter
+
+    private lateinit var originalData: List<Maintenance>
 
     private val insertMaintenanceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -65,6 +68,17 @@ class MaintenancesFragment : Fragment() {
 
             insertMaintenanceLauncher.launch(intent)
         }
+
+        binding.searchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                filter(s.toString().lowercase(Locale.getDefault()))
+            }
+        })
+
         return binding.root
     }
 
@@ -76,7 +90,7 @@ class MaintenancesFragment : Fragment() {
     }
 
     private fun showLoading(isLoading: Boolean) {
-        if (_binding == null) return // **CORREÇÃO: Evita acessar binding após onDestroyView**
+        if (_binding == null) return
 
         if (isLoading) {
             binding.progressBar.visibility = View.VISIBLE
@@ -112,7 +126,6 @@ class MaintenancesFragment : Fragment() {
             try {
                 val snapshot = db.collection("driver").document(userId).get().await()
 
-                // ** CORREÇÃO 1: Checa se o Fragment ainda está anexado após a operação assíncrona **
                 if (!isAdded) return@launch
 
                 if (snapshot.exists()) {
@@ -131,7 +144,6 @@ class MaintenancesFragment : Fragment() {
                     showLoading(false)
                 }
             } catch (e: Exception) {
-                // ** CORREÇÃO 2: Checa se o Fragment está anexado antes de mostrar o Toast **
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
                 }
@@ -151,13 +163,15 @@ class MaintenancesFragment : Fragment() {
             try {
                 val response = RetrofitClient.instance.getMaintenances(truckId)
 
-                // ** CORREÇÃO 3: Checa se o Fragment ainda está anexado após a requisição de rede **
                 if (!isAdded) return@launch
 
                 if (response.isSuccessful) {
                     val maintenancesList = response.body()
+
                     maintenancesList?.let {
+                        originalData = it
                         setupRecyclerView(it)
+
                     } ?: run {
                         setupRecyclerView(emptyList())
                         Toast.makeText(requireContext(), "Nenhuma manutenção encontrada.", Toast.LENGTH_SHORT).show()
@@ -168,7 +182,6 @@ class MaintenancesFragment : Fragment() {
                 }
 
             } catch (e: Exception) {
-                // ** CORREÇÃO 4: Checa se o Fragment está anexado antes de mostrar o Toast **
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
                 }
@@ -176,7 +189,6 @@ class MaintenancesFragment : Fragment() {
                     setupRecyclerView(emptyList())
                 }
             } finally {
-                // ** CORREÇÃO 5: Garante que só acessa o binding se a View não foi destruída **
                 if (_binding != null) {
                     showLoading(false)
                 }
@@ -185,17 +197,35 @@ class MaintenancesFragment : Fragment() {
     }
 
     private fun setupRecyclerView(data: List<Maintenance>) {
-        if (_binding == null) return // **CORREÇÃO: Evita acessar binding após onDestroyView**
+        if (_binding == null) return
 
-        if (binding.maintenancesRecyclerView.adapter == null) {
-            val recyclerView = binding.maintenancesRecyclerView
-            // Usa requireContext() para garantir um Context válido.
+        val recyclerView = binding.maintenancesRecyclerView
+
+        if (recyclerView.adapter == null) {
+            maintenanceAdapter = MaintenanceAdapter(data)
+
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.addItemDecoration(VerticalSpaceItemDecoration(dpToPx(24)))
-            recyclerView.adapter = MaintenanceAdapter(data)
+            recyclerView.adapter = maintenanceAdapter
+
         } else {
-            (binding.maintenancesRecyclerView.adapter as? MaintenanceAdapter)?.updateData(data)
+            (recyclerView.adapter as? MaintenanceAdapter)?.updateData(data)
         }
+    }
+
+    private fun filter(text: String) {
+        val filteredList: MutableList<Maintenance> = mutableListOf()
+        val query = text.lowercase()
+
+        for (item in originalData){
+            if (item.titulo.lowercase().contains(query) ||
+                item.info.lowercase().contains(query)) {
+
+                filteredList.add(item)
+            }
+        }
+
+        maintenanceAdapter.updateData(filteredList)
     }
 
     private fun dpToPx(dp: Int): Int {
@@ -204,12 +234,6 @@ class MaintenancesFragment : Fragment() {
             dp.toFloat(),
             Resources.getSystem().displayMetrics
         ).toInt()
-    }
-
-    private fun createDate(year: Int, month: Int, day: Int, hour: Int, minute: Int): Date {
-        val calendar = Calendar.getInstance()
-        calendar.set(year, month - 1, day, hour, minute, 0)
-        return calendar.time
     }
 
     override fun onDestroyView() {

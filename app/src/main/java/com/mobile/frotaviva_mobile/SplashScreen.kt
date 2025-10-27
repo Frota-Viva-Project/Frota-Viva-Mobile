@@ -12,6 +12,8 @@ import androidx.core.os.postDelayed
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
+import com.mobile.frotaviva_mobile.auth.JwtUtils
+import com.mobile.frotaviva_mobile.storage.SecureStorage
 
 class SplashScreen : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
