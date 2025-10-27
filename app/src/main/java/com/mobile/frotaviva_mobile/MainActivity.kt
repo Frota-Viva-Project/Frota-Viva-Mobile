@@ -73,16 +73,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val formattedDate = dateFormat.format(currentDate)
         headerSubtitle.text = formattedDate
 
-
-        // ==========================================================
-        // 3. CONFIGURAÇÃO DA BOTTOM NAVIGATION
-        // ==========================================================
-
         val bottomNavigationView = binding.navbarInclude.bottomNavigation
 
         if (savedInstanceState == null) {
             bottomNavigationView.selectedItemId = R.id.nav_home
-            loadFragment(HomeFragment()) // Garanta o import de HomeFragment
+            loadFragment(HomeFragment())
         }
 
         bottomNavigationView.setOnItemSelectedListener { item ->
