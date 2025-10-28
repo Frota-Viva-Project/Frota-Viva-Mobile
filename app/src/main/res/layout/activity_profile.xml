@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Layout principal usando ConstraintLayout para posicionar os elementos
-  de forma flexível e responsiva.
--->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -12,10 +8,6 @@
     android:background="#F0F4F8"
     tools:context=".Profile">
 
-    <!--
-      Elemento View para criar o fundo azul escuro do cabeçalho.
-      Ele se estende por toda a largura e tem uma altura fixa.
-    -->
     <View
         android:id="@+id/header_background"
         android:layout_width="411dp"
@@ -25,7 +17,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Botão de voltar (seta) no canto superior esquerdo -->
     <ImageButton
         android:id="@+id/backButton"
         android:layout_width="wrap_content"
@@ -40,10 +31,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@android:color/white" />
 
-    <!--
-      Imagem de perfil do usuário.
-      ShapeableImageView permite criar formas, como um círculo perfeito.
-    -->
+
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/profileImageView"
         android:layout_width="100dp"
@@ -56,10 +44,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
-    <!--
-      Ícone de "pessoa" sobreposto no canto da imagem de perfil.
-      Posicionado usando 'constraintCircle' em relação à imagem principal.
-    -->
     <androidx.cardview.widget.CardView
         android:id="@+id/editIconContainer"
         android:layout_width="32dp"
@@ -83,7 +67,6 @@
             app:tint="@android:color/white" />
     </androidx.cardview.widget.CardView>
 
-    <!-- Nome do usuário, centralizado abaixo da imagem de perfil -->
     <TextView
         android:id="@+id/nameTextView"
         android:layout_width="wrap_content"
@@ -97,10 +80,6 @@
         app:layout_constraintStart_toStartOf="@+id/profileImageView"
         app:layout_constraintTop_toBottomOf="@+id/profileImageView" />
 
-    <!--
-      CardView que agrupa a lista de opções, criando um efeito de elevação
-      e cantos arredondados.
-    -->
     <androidx.cardview.widget.CardView
         android:id="@+id/menuCard"
         android:layout_width="0dp"
@@ -114,16 +93,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/nameTextView">
 
-        <!--
-          LinearLayout vertical para organizar os itens do menu um abaixo do outro.
-        -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingVertical="8dp">
 
-            <!-- Item de Menu: Termos de uso -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -156,14 +131,12 @@
                     app:tint="#A0AEC0" />
             </LinearLayout>
 
-            <!-- Divisor -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:layout_marginHorizontal="16dp"
                 android:background="#E2E8F0" />
 
-            <!-- Item de Menu: Cartões e Pagamento -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -196,14 +169,12 @@
                     app:tint="#A0AEC0" />
             </LinearLayout>
 
-            <!-- Divisor -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:layout_marginHorizontal="16dp"
                 android:background="#E2E8F0" />
 
-            <!-- Item de Menu: Ajuda -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -236,14 +207,12 @@
                     app:tint="#A0AEC0" />
             </LinearLayout>
 
-            <!-- Divisor -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:layout_marginHorizontal="16dp"
                 android:background="#E2E8F0" />
 
-            <!-- Item de Menu: Editar Senha -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -276,14 +245,12 @@
                     app:tint="#A0AEC0" />
             </LinearLayout>
 
-            <!-- Divisor -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:layout_marginHorizontal="16dp"
                 android:background="#E2E8F0" />
 
-            <!-- Item de Menu: Verificar informações -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

@@ -12,28 +12,21 @@ class UserTermsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Configuração de tela inteira (se aplicável, mantenho o padrão do seu projeto)
-        // enableEdgeToEdge()
-
         setContentView(R.layout.activity_user_terms)
 
-        // Adiciona padding para barras do sistema, se necessário
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0) // Aplica padding apenas em cima/lados
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
 
-        // 1. Funcionalidade do Botão Voltar (seta)
         val backButton: ImageButton = findViewById(R.id.backButton)
         backButton.setOnClickListener {
-            onBackPressedDispatcher.onBackPressed() // Fecha a Activity e volta para a tela anterior
+            onBackPressedDispatcher.onBackPressed()
         }
 
-        // 2. Inserção do Conteúdo
         val termosDeUsoText: TextView = findViewById(R.id.textTermosDeUso)
 
-        // O texto com a formatação básica (quebras de linha e parágrafos)
         val textoCompleto = """
             Bem-vindo ao aplicativo que vai te ajudar a manter seu caminhão sempre em dia. Antes de começar a usar, é importante que você leia e entenda estes termos.
 
