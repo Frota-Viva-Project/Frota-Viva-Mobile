@@ -10,12 +10,13 @@
 
     <View
         android:id="@+id/blueHeader"
-        android:layout_width="447dp"
-        android:layout_height="386dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:background="@color/primary_default"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHeight_percent="0.5" />
 
     <ImageButton
         android:id="@+id/backButton"
