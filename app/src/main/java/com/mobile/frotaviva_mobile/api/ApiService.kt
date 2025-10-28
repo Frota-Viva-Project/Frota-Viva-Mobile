@@ -5,6 +5,8 @@ import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 import com.mobile.frotaviva_mobile.model.Maintenance
 import com.mobile.frotaviva_mobile.model.Alert
 import com.mobile.frotaviva_mobile.model.AlertRequest
+import com.mobile.frotaviva_mobile.model.ChatRequest
+import com.mobile.frotaviva_mobile.model.ChatResponse
 import com.mobile.frotaviva_mobile.model.LocationPostResponse
 import com.mobile.frotaviva_mobile.model.LocationUpdateRequest
 import com.mobile.frotaviva_mobile.model.MaintenanceRequest
@@ -65,4 +67,9 @@ interface ApiService {
     suspend fun exchangeFirebaseToken(
         @Body request: TokenExchangeRequest
     ): Response<LoginResponse>
+
+    @POST("chat")
+    suspend fun sendMessageToChatbot(
+        @Body request: ChatRequest
+    ): Response<ChatResponse>
 }

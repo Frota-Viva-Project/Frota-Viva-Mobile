@@ -13,8 +13,15 @@ object RetrofitClient {
 
     private const val BASE_URL = "https://api-postgresql-kr87.onrender.com/v1/api/"
 
+    private const val BASE_CHAT_URL = "https://chatbot-api-xung.onrender.com"
+
     @Volatile
     private lateinit var apiServiceInstance: ApiService
+
+    @Volatile
+    private lateinit var chatBotServiceInstance: ApiService
+
+    private lateinit var sharedOkHttpClient: OkHttpClient
 
     fun initialize(context: Context) {
         if (::apiServiceInstance.isInitialized) {
@@ -35,9 +42,17 @@ object RetrofitClient {
 
         val retrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(okHttpClient)
+            .client(sharedOkHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+
+        val retrofitChatbot = Retrofit.Builder()
+            .baseUrl(BASE_CHAT_URL)
+            .client(sharedOkHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        chatBotServiceInstance = retrofitChatbot.create(ApiService::class.java)
 
         apiServiceInstance = retrofit.create(ApiService::class.java)
     }
@@ -48,5 +63,13 @@ object RetrofitClient {
                 "RetrofitClient não foi inicializado. Chame RetrofitClient.initialize(context) primeiro."
             }
             return apiServiceInstance
+        }
+
+    val chatbotInstance: ApiService
+        get() {
+            check(::chatBotServiceInstance.isInitialized) {
+                "RetrofitClient não foi inicializado. Chame RetrofitClient.initialize(context) primeiro."
+            }
+            return chatBotServiceInstance
         }
 }
