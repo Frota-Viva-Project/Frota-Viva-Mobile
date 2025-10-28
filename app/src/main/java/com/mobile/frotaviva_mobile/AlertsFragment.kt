@@ -1,8 +1,7 @@
-package com.mobile.frotaviva_mobile.fragments
+package com.mobile.frotaviva_mobile
 
 import VerticalSpaceItemDecoration
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
@@ -16,13 +15,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.mobile.frotaviva_mobile.InsertAlert
-import com.mobile.frotaviva_mobile.InsertMaintenance
-import com.mobile.frotaviva_mobile.R
 import com.mobile.frotaviva_mobile.adapter.AlertAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentAlertsBinding
-import com.mobile.frotaviva_mobile.databinding.FragmentMaintenancesBinding
 import com.mobile.frotaviva_mobile.model.Alert
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
