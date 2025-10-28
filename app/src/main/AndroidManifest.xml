@@ -58,6 +58,12 @@
         <activity
             android:name=".Login"
             android:exported="false" />
+        <activity
+            android:name=".Profile"
+            android:exported="false" />
+        <activity
+            android:name=".UserTermsActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
