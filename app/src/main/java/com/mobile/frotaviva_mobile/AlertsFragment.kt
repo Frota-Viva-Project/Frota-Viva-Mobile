@@ -1,4 +1,4 @@
-package com.mobile.frotaviva_mobile.fragments
+package com.mobile.frotaviva_mobile
 
 import VerticalSpaceItemDecoration
 import android.app.Activity

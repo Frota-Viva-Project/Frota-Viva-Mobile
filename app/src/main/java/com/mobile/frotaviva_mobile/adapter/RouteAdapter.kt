@@ -10,7 +10,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.mobile.frotaviva_mobile.R
 import com.mobile.frotaviva_mobile.model.Route
 
-class RouteAdapter(private var routes: List<Route>) :
+class RouteAdapter(
+    private var routes: List<Route>,
+    private val onRouteDone: (routeId: Int) -> Unit) :
     RecyclerView.Adapter<RouteAdapter.RouteViewHolder>() {
 
     class RouteViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -30,14 +32,13 @@ class RouteAdapter(private var routes: List<Route>) :
     override fun onBindViewHolder(holder: RouteViewHolder, position: Int) {
         val route = routes[position]
 
-        // Preenche os dados
         holder.arrival.text = "Destino: ${route.destinoFinal}"
         holder.departure.text = route.destinoInicial
         holder.distance.text = route.distancia
         holder.status.text = route.status
 
         holder.finishButton.setOnClickListener {
-            Toast.makeText(holder.itemView.context, "Funcionalidade de Concluir Rota em desenvolvimento.", Toast.LENGTH_SHORT).show()
+            onRouteDone(route.id)
         }
     }
 

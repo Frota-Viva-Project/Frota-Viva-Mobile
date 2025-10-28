@@ -13,9 +13,11 @@ import com.mobile.frotaviva_mobile.model.Route
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
     @GET("manutencao/caminhao/{id}")
@@ -65,4 +67,10 @@ interface ApiService {
     suspend fun exchangeFirebaseToken(
         @Body request: TokenExchangeRequest
     ): Response<LoginResponse>
+
+    @PATCH("rota_caminhao/finalizada")
+    suspend fun markRouteAsDone(
+        @Query("id_caminhao") idCaminhao: Int,
+        @Query("id_rota") idRota: Int
+    ): Response<Unit>
 }

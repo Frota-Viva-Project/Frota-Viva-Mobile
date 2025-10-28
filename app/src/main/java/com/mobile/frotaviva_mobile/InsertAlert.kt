@@ -5,17 +5,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.ActivityInsertAlertBinding
-import com.mobile.frotaviva_mobile.databinding.ActivityInsertMaintenanceBinding
-import com.mobile.frotaviva_mobile.fragments.AlertsFragment
-import com.mobile.frotaviva_mobile.fragments.MaintenancesFragment
 import com.mobile.frotaviva_mobile.model.AlertRequest
-import com.mobile.frotaviva_mobile.model.MaintenanceRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
