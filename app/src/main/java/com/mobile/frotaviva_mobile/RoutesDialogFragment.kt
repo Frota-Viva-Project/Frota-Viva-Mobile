@@ -118,13 +118,17 @@ class RoutesDialogFragment : DialogFragment() {
                 if (response.isSuccessful) {
                     val routesList = response.body() ?: emptyList()
 
-                    val nonFinishedRoutes = routesList.filter {
-                        it.status == "EM ROTA"
+                    val pendingRoutes = routesList.filter {
+                        it.status != "ATIVA"
                     }
 
-                    routeAdapter.updateData(nonFinishedRoutes)
+                    val sortedRoutes = pendingRoutes.sortedWith(compareByDescending { route ->
+                        route.status == "EM ROTA"
+                    })
 
-                    if (nonFinishedRoutes.isEmpty()) {
+                    routeAdapter.updateData(sortedRoutes)
+
+                    if (sortedRoutes.isEmpty()) {
                         Toast.makeText(requireContext(), "Nenhuma rota pendente encontrada.", Toast.LENGTH_SHORT).show()
                     }
                 } else {
