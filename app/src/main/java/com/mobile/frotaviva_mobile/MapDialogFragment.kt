@@ -1,10 +1,10 @@
-package com.mobile.frotaviva_mobile // Use o seu pacote correto
+package com.mobile.frotaviva_mobile
 
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import androidx.fragment.app.DialogFragment
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -18,6 +18,8 @@ class MapDialogFragment : DialogFragment(), OnMapReadyCallback {
     private lateinit var googleMap: GoogleMap
     private var startLat: Double = 0.0
     private var startLng: Double = 0.0
+
+    private val DIALOG_PERCENTAGE = 0.80
 
     companion object {
         const val TAG = "MapDialogFragment"
@@ -37,7 +39,6 @@ class MapDialogFragment : DialogFragment(), OnMapReadyCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Define o estilo para DialogFragment: sem título, mas com fundo transparente/escurecido
         setStyle(STYLE_NORMAL, R.style.CustomMapDialogTheme)
 
         arguments?.let {
@@ -62,11 +63,23 @@ class MapDialogFragment : DialogFragment(), OnMapReadyCallback {
         mapFragment?.getMapAsync(this)
     }
 
-    override fun onResume() {
-        super.onResume()
-        dialog?.window?.setLayout(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT
+    override fun onStart() {
+        super.onStart()
+
+        val window = dialog?.window ?: return
+
+        val displayMetrics = DisplayMetrics()
+        window.windowManager.defaultDisplay.getMetrics(displayMetrics)
+
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+
+        val dialogWidth = (screenWidth * DIALOG_PERCENTAGE).toInt()
+        val dialogHeight = (screenHeight * DIALOG_PERCENTAGE).toInt()
+
+        window.setLayout(
+            dialogWidth,
+            dialogHeight
         )
     }
 
@@ -80,6 +93,7 @@ class MapDialogFragment : DialogFragment(), OnMapReadyCallback {
 
         val startLocation = LatLng(startLat, startLng)
 
+        // Nota: Certifique-se de que R.string.marker_title está definido
         googleMap.addMarker(MarkerOptions().position(startLocation).title(getString(R.string.marker_title)))
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(startLocation, 16f))
     }

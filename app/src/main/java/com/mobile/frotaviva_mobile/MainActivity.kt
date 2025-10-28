@@ -14,8 +14,6 @@ import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.mobile.frotaviva_mobile.databinding.ActivityMainBinding
-import com.mobile.frotaviva_mobile.fragments.AlertsFragment
-import com.mobile.frotaviva_mobile.fragments.MaintenancesFragment
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
