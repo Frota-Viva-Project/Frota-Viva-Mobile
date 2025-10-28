@@ -40,7 +40,8 @@ class Profile : AppCompatActivity() {
             }
 
             it.getChildAt(2).setOnClickListener {
-                Toast.makeText(this, "Navegar para Cartões e Pagamento", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, PaymentActivity::class.java) // Use o nome real da sua Activity de Pagamento
+                startActivity(intent)
             }
 
             it.getChildAt(4).setOnClickListener {
