@@ -134,7 +134,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 startActivity(intent)
             }
             R.id.nav_ajuda -> {
-                Toast.makeText(this, "Navegando para Ajuda", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, HelpActivity::class.java)
+                startActivity(intent)
             }
         }
 
