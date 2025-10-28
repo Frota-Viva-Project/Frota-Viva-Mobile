@@ -18,8 +18,8 @@
     -->
     <View
         android:id="@+id/header_background"
-        android:layout_width="0dp"
-        android:layout_height="300dp"
+        android:layout_width="411dp"
+        android:layout_height="378dp"
         android:background="#3A4D6F"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

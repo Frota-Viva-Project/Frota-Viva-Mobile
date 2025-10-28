@@ -20,6 +20,9 @@
         android:theme="@style/Theme.FrotaVivaMobile"
         tools:targetApi="31">
         <activity
+            android:name=".UserTermsActivity"
+            android:exported="false" />
+        <activity
             android:name=".InsertAlert"
             android:exported="false" />
 
@@ -57,6 +60,12 @@
             android:exported="false" />
         <activity
             android:name=".Login"
+            android:exported="false" />
+        <activity
+            android:name=".Profile"
+            android:exported="false" />
+        <activity
+            android:name=".UserTermsActivity"
             android:exported="false" />
     </application>
 
