@@ -196,13 +196,44 @@ class MaintenancesFragment : Fragment() {
         }
     }
 
+    private fun markMaintenanceAsDone(truckId: Int, maintenanceId: Int) {
+        if (truckId <= 0) {
+            Toast.makeText(requireContext(), "ID do caminhão não disponível.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.markMaintenanceAsDone(truckId, maintenanceId)
+
+                if (!isAdded) return@launch
+
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Manutenção finalizada com sucesso!", Toast.LENGTH_SHORT).show()
+                    fetchMaintenances(truckId)
+                } else {
+                    Toast.makeText(requireContext(), "Falha ao finalizar manutenção: ${response.code()}", Toast.LENGTH_LONG).show()
+                }
+
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro de conexão ao finalizar manutenção: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+
     private fun setupRecyclerView(data: List<Maintenance>) {
         if (_binding == null) return
 
         val recyclerView = binding.maintenancesRecyclerView
+        val truckId = arguments?.getInt(TRUCK_ID_KEY, 0) ?: 0
 
         if (recyclerView.adapter == null) {
-            maintenanceAdapter = MaintenanceAdapter(data)
+            maintenanceAdapter = MaintenanceAdapter(data) { maintenanceId ->
+                markMaintenanceAsDone(truckId, maintenanceId)
+            }
 
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.addItemDecoration(VerticalSpaceItemDecoration(dpToPx(24)))

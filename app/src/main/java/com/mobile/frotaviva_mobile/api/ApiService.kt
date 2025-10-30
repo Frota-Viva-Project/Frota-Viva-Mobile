@@ -73,4 +73,16 @@ interface ApiService {
         @Query("id_caminhao") idCaminhao: Int,
         @Query("id_rotacaminhao") idRota: Int
     ): Response<Unit>
+
+    @PATCH("manutencao/caminhao")
+    suspend fun markMaintenanceAsDone(
+        @Query("id_caminhao") idCaminhao: Int,
+        @Query("id_manuntecao") idManutencao: Int
+    ): Response<Unit>
+
+    @PATCH("manutencao/caminhao/servico")
+    suspend fun askMaintenanceForService(
+        @Query("id_caminhao") idCaminhao: Int,
+        @Query("id_manutencao") idManutencao: Int
+    ): Response<Unit>
 }
