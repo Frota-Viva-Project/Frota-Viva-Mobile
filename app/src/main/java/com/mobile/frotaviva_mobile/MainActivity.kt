@@ -68,7 +68,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             if (!userName.isNullOrEmpty()) {
                 headerTitle.text = "Olá, $userName"
             } else {
-                // Se o displayName estiver vazio, use o email ou um nome genérico
                 headerTitle.text = "Olá, Usuário"
             }
         }

@@ -8,14 +8,17 @@ import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.mobile.frotaviva_mobile.R
 import com.mobile.frotaviva_mobile.adapter.RouteAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.DialogRoutesVisualizationBinding
-import com.mobile.frotaviva_mobile.databinding.RouteItemBinding
+import com.mobile.frotaviva_mobile.model.Route
 import kotlinx.coroutines.launch
 
 class RoutesDialogFragment : DialogFragment() {
+
+    interface RouteUpdateListener {
+        fun onRoutesFetched(mainRoute: Route?)
+    }
 
     companion object {
         const val TAG = "RoutesDialogFragment"
@@ -34,10 +37,14 @@ class RoutesDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
     private lateinit var routeAdapter: RouteAdapter
     private var truckId: Int = 0
+    private var routeUpdateListener: RouteUpdateListener? = null
+
+    fun setRouteUpdateListener(listener: RouteUpdateListener) {
+        this.routeUpdateListener = listener
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        setStyle(STYLE_NORMAL, R.style.CustomDialogTheme)
         truckId = arguments?.getInt(TRUCK_ID_ARG) ?: 0
     }
 
@@ -45,8 +52,8 @@ class RoutesDialogFragment : DialogFragment() {
         super.onStart()
 
         dialog?.window?.setLayout(
-            ViewGroup.LayoutParams.WRAP_CONTENT, // Largura: Ajusta ao tamanho do CardView
-            ViewGroup.LayoutParams.WRAP_CONTENT  // Altura: Ajusta ao tamanho do CardView
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
         )
     }
 
@@ -54,7 +61,6 @@ class RoutesDialogFragment : DialogFragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Assume que o CardView fornecido está em um layout chamado 'dialog_routes.xml'
         _binding = DialogRoutesVisualizationBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -73,16 +79,46 @@ class RoutesDialogFragment : DialogFragment() {
     }
 
     private fun setupRecyclerView() {
-        routeAdapter = RouteAdapter(emptyList())
+        routeAdapter = RouteAdapter(emptyList()) { routeId ->
+            markRouteAsDone(routeId)
+        }
+
         binding.routeRecycler.apply{
             layoutManager = LinearLayoutManager(context)
             adapter = routeAdapter
         }
     }
+    private fun markRouteAsDone(routeId: Int) {
+        if (truckId <= 0) {
+            Toast.makeText(requireContext(), "ID do caminhão não disponível.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.markRouteAsDone(truckId, routeId)
+
+                if (!isAdded) return@launch
+
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Rota finalizada com sucesso!", Toast.LENGTH_SHORT).show()
+
+                    fetchRoutes(truckId)
+
+                } else {
+                    Toast.makeText(requireContext(), "Falha ao finalizar rota: ${response.code()}", Toast.LENGTH_LONG).show()
+                }
+
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro de conexão ao finalizar rota: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
 
     private fun fetchRoutes(truckId: Int) {
-        // showLoading(true) // Opcional: Adicionar ProgressBar no Dialog para loading
-
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.getRoutes(truckId)
@@ -91,10 +127,19 @@ class RoutesDialogFragment : DialogFragment() {
 
                 if (response.isSuccessful) {
                     val routesList = response.body() ?: emptyList()
-                    routeAdapter.updateData(routesList)
 
-                    if (routesList.isEmpty()) {
-                        Toast.makeText(requireContext(), "Nenhuma rota encontrada.", Toast.LENGTH_SHORT).show()
+                    val sortedRoutes = routesList.sortedWith(compareByDescending { route ->
+                        route.status == "EM ROTA"
+                    })
+
+                    val mainRoute = sortedRoutes.firstOrNull { it.status == "EM ROTA" }
+
+                    routeUpdateListener?.onRoutesFetched(mainRoute)
+
+                    routeAdapter.updateData(sortedRoutes)
+
+                    if (sortedRoutes.isEmpty()) {
+                        Toast.makeText(requireContext(), "Nenhuma rota encontrada para o caminhão.", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(requireContext(), "Erro ao carregar rotas: ${response.code()}", Toast.LENGTH_LONG).show()
@@ -105,9 +150,6 @@ class RoutesDialogFragment : DialogFragment() {
                     Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
-            // finally {
-            //     showLoading(false)
-            // }
         }
     }
 
