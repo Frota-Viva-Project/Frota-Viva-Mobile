@@ -94,7 +94,7 @@
 
         <!-- Botão Marcar como Ajustado -->
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/constraintLayout5"
+            android:id="@+id/buttonMarkAsFixed"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_marginTop="20dp"
@@ -121,7 +121,7 @@
 
         <!-- Botão Solicitar Serviço -->
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/constraintLayout6"
+            android:id="@+id/buttonAskForService"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_marginTop="8dp"
@@ -132,7 +132,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/constraintLayout5">
+            app:layout_constraintTop_toBottomOf="@+id/buttonMarkAsFixed">
 
             <TextView
                 android:id="@+id/textView25"
