@@ -11,9 +11,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.mobile.frotaviva_mobile.adapter.RouteAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.DialogRoutesVisualizationBinding
+import com.mobile.frotaviva_mobile.model.Route
 import kotlinx.coroutines.launch
 
 class RoutesDialogFragment : DialogFragment() {
+
+    interface RouteUpdateListener {
+        fun onRoutesFetched(mainRoute: Route?)
+    }
 
     companion object {
         const val TAG = "RoutesDialogFragment"
@@ -32,6 +37,11 @@ class RoutesDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
     private lateinit var routeAdapter: RouteAdapter
     private var truckId: Int = 0
+    private var routeUpdateListener: RouteUpdateListener? = null
+
+    fun setRouteUpdateListener(listener: RouteUpdateListener) {
+        this.routeUpdateListener = listener
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -118,18 +128,18 @@ class RoutesDialogFragment : DialogFragment() {
                 if (response.isSuccessful) {
                     val routesList = response.body() ?: emptyList()
 
-                    val pendingRoutes = routesList.filter {
-                        it.status != "ATIVA"
-                    }
-
-                    val sortedRoutes = pendingRoutes.sortedWith(compareByDescending { route ->
+                    val sortedRoutes = routesList.sortedWith(compareByDescending { route ->
                         route.status == "EM ROTA"
                     })
+
+                    val mainRoute = sortedRoutes.firstOrNull { it.status == "EM ROTA" }
+
+                    routeUpdateListener?.onRoutesFetched(mainRoute)
 
                     routeAdapter.updateData(sortedRoutes)
 
                     if (sortedRoutes.isEmpty()) {
-                        Toast.makeText(requireContext(), "Nenhuma rota pendente encontrada.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Nenhuma rota encontrada para o caminhão.", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(requireContext(), "Erro ao carregar rotas: ${response.code()}", Toast.LENGTH_LONG).show()

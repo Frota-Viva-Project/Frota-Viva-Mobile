@@ -43,7 +43,7 @@ import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-class HomeFragment : Fragment(), OnMapReadyCallback {
+class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteUpdateListener {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val db = FirebaseFirestore.getInstance()
@@ -131,6 +131,18 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.routeArrival.visibility = if (isLoading) View.GONE else View.VISIBLE
     }
 
+    override fun onRoutesFetched(mainRoute: com.mobile.frotaviva_mobile.model.Route?) {
+        if (mainRoute != null) {
+            updateRouteDisplay(mainRoute.destinoInicial, mainRoute.destinoFinal)
+
+            binding.routeContainer.visibility = View.VISIBLE
+        } else {
+            updateRouteDisplay(getString(R.string.no_active_route), getString(R.string.no_active_route))
+            binding.routeContainer.visibility = View.GONE
+        }
+    }
+
+
     private fun fetchRoutes(truckId: Int) {
         lifecycleScope.launch {
             try {
@@ -141,21 +153,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 if (response.isSuccessful) {
                     val activeRoute = response.body()
                         ?.firstOrNull { it.status == "EM ROTA" }
-
-                    if (activeRoute != null) {
-                        updateRouteDisplay(activeRoute.destinoInicial, activeRoute.destinoFinal)
-                    } else {
-                        updateRouteDisplay(getString(R.string.no_active_route), getString(R.string.no_active_route))
-                    }
-                } else {
-                    Toast.makeText(requireContext(), "Erro ao carregar rotas: ${response.code()}", Toast.LENGTH_LONG).show()
-                    updateRouteDisplay(getString(R.string.loading_error), getString(R.string.loading_error))
+                    onRoutesFetched(activeRoute)
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão/API", Toast.LENGTH_LONG).show()
-                }
-                updateRouteDisplay(getString(R.string.loading_error), getString(R.string.loading_error))
             }
         }
     }
@@ -282,6 +282,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private fun openAllRoutesModal(truckId: Int) {
         val dialog = RoutesDialogFragment.newInstance(truckId)
+
+        dialog.setRouteUpdateListener(this)
+
         dialog.show(childFragmentManager, RoutesDialogFragment.TAG)
     }
 
@@ -292,7 +295,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         val locationWorkRequest = PeriodicWorkRequest.Builder(
             LocationTrackingWorker::class.java,
-            15, // Intervalo de repetição
+            15,
             TimeUnit.MINUTES
         )
             .setConstraints(constraints)

@@ -3,42 +3,43 @@ package com.mobile.frotaviva_mobile.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import com.mobile.frotaviva_mobile.R
+import com.mobile.frotaviva_mobile.databinding.RouteItemBinding
 import com.mobile.frotaviva_mobile.model.Route
 
 class RouteAdapter(
     private var routes: List<Route>,
-    private val onRouteDone: (routeId: Int) -> Unit) :
-    RecyclerView.Adapter<RouteAdapter.RouteViewHolder>() {
-
-    class RouteViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val arrival: TextView = itemView.findViewById(R.id.routeItemArrival)
-        val departure: TextView = itemView.findViewById(R.id.routeItemDeparture)
-        val distance: TextView = itemView.findViewById(R.id.routeItemDistance)
-        val status: TextView = itemView.findViewById(R.id.routeItemStatus)
-        val finishButton: Button = itemView.findViewById(R.id.buttonLogin2)
-    }
+    private val onRouteDone: (routeId: Int) -> Unit
+) : RecyclerView.Adapter<RouteAdapter.RouteViewHolder>() {
+    inner class RouteViewHolder(val binding: RouteItemBinding) :
+        RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RouteViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.route_item, parent, false)
-        return RouteViewHolder(view)
+        val binding = RouteItemBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return RouteViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: RouteViewHolder, position: Int) {
         val route = routes[position]
 
-        holder.arrival.text = "Destino: ${route.destinoFinal}"
-        holder.departure.text = route.destinoInicial
-        holder.distance.text = route.distancia
-        holder.status.text = route.status
+        holder.binding.routeItemArrival.text = "Destino: ${route.destinoFinal}"
+        holder.binding.routeItemDeparture.text = route.destinoInicial
+        holder.binding.routeItemDistance.text = route.distancia
+        holder.binding.routeItemStatus.text = route.status
 
-        holder.finishButton.setOnClickListener {
-            onRouteDone(route.id)
+        val isFinished = route.status == "FINALIZADA" || route.status == "CONCLUIDA"
+
+        holder.binding.concluirRota.visibility =
+            if (isFinished) View.GONE else View.VISIBLE
+
+        if (!isFinished) {
+            holder.binding.concluirRota.setOnClickListener {
+                onRouteDone(route.id)
+            }
         }
     }
 

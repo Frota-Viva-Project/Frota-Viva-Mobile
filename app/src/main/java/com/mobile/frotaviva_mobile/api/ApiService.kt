@@ -71,6 +71,6 @@ interface ApiService {
     @PATCH("rota_caminhao/finalizada")
     suspend fun markRouteAsDone(
         @Query("id_caminhao") idCaminhao: Int,
-        @Query("id_rota") idRota: Int
+        @Query("id_rotacaminhao") idRota: Int
     ): Response<Unit>
 }
