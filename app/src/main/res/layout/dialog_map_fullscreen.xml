@@ -2,19 +2,21 @@
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    app:cardCornerRadius="16dp"
+    android:layout_width="wrap_content"     android:layout_height="wrap_content"    app:cardCornerRadius="16dp"
     app:cardElevation="8dp"
-    android:layout_gravity="center"> <androidx.constraintlayout.widget.ConstraintLayout
-    android:layout_width="365dp"
-    android:layout_height="465dp"
-    android:background="@drawable/rounded_card_background"> <androidx.fragment.app.FragmentContainerView
-    android:id="@+id/full_screen_map"
-    android:name="com.google.android.gms.maps.SupportMapFragment"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".FullScreenMapActivity" />
+    android:layout_gravity="center">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/dialog_container"   android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/rounded_card_background">
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/full_screen_map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:context=".FullScreenMapActivity" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

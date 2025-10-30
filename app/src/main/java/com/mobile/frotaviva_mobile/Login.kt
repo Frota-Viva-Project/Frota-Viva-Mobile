@@ -35,8 +35,6 @@ class Login : AppCompatActivity() {
 
         RetrofitClient.initialize(applicationContext)
 
-        checkPersistentLogin() // CHAMA A VERIFICAÇÃO DE LOGIN IMEDIATAMENTE
-
         binding.navigateToRegister.setOnClickListener {
             startActivity(Intent(this, Register::class.java))
         }
@@ -52,6 +50,11 @@ class Login : AppCompatActivity() {
 
             loginUser(email, password)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkPersistentLogin()
     }
 
     private fun loginUser(email: String, password: String) {
