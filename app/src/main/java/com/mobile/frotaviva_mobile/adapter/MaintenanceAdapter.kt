@@ -9,7 +9,8 @@ import com.mobile.frotaviva_mobile.model.Maintenance
 
 class MaintenanceAdapter (
     private var items: List<Maintenance>,
-    private val onMaintenanceDone: (maintenanceId: Int) -> Unit
+    private val onMaintenanceDone: (maintenanceId: Int) -> Unit,
+    private val onServiceAsked: (maintenanceId: Int) -> Unit,
 ) :
     RecyclerView.Adapter<MaintenanceAdapter.MaintenanceViewHolder>() {
 
@@ -35,7 +36,7 @@ class MaintenanceAdapter (
 
         val isDone = maintenance.status == "CONCLUIDO"
 
-        val isServiceAsked = maintenance.status == "SERVICO"
+        val isServiceAsked = maintenance.status == "SERVICO;"
 
         holder.binding.buttonMarkAsFixed.visibility =
             if (isDone) View.GONE else View.VISIBLE
@@ -46,6 +47,10 @@ class MaintenanceAdapter (
         if (!isDone) {
             holder.binding.buttonMarkAsFixed.setOnClickListener {
                 onMaintenanceDone(maintenance.id)
+            }
+
+            holder.binding.buttonAskForService.setOnClickListener {
+                onServiceAsked(maintenance.id)
             }
         }
     }

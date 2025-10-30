@@ -81,8 +81,8 @@ interface ApiService {
     ): Response<Unit>
 
     @PATCH("manutencao/caminhao/servico")
-    suspend fun askMaintenanceForService(
+    suspend fun askServiceForMaintenance(
         @Query("id_caminhao") idCaminhao: Int,
-        @Query("id_manutencao") idManutencao: Int
+        @Query("id_manuntecao") idManutencao: Int
     ): Response<Unit>
 }
