@@ -6,23 +6,26 @@ import okhttp3.Response
 import android.util.Log
 
 class AuthInterceptor(private val secureStorage: SecureStorage) : Interceptor {
-    private val AUTH_HEADER = "Authorization"
-    private val TOKEN_TYPE = "Bearer"
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
-
         val token = secureStorage.getToken()
 
-        if (token.isNullOrEmpty()) {
-            Log.w("AuthInterceptor", "Nenhum token encontrado. Requisição enviada sem autenticação.")
-            return chain.proceed(originalRequest)
+        val requestWithToken = if (!token.isNullOrEmpty()) {
+            originalRequest.newBuilder()
+                .header("Authorization", "Bearer $token")
+                .build()
+        } else {
+            originalRequest
         }
 
-        val authenticatedRequest = originalRequest.newBuilder()
-            .header(AUTH_HEADER, "$TOKEN_TYPE $token")
-            .build()
+        val response = chain.proceed(requestWithToken)
 
-        return chain.proceed(authenticatedRequest)
+        if (response.code == 401) {
+            Log.w("AuthInterceptor", "Token expirado ou inválido (401). Limpando armazenamento.")
+            secureStorage.clearToken()
+        }
+
+        return response
     }
 }

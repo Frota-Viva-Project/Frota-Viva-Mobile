@@ -13,7 +13,9 @@ import com.google.android.material.navigation.NavigationView
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.auth.FirebaseAuth
+import com.mobile.frotaviva_mobile.auth.JwtUtils
 import com.mobile.frotaviva_mobile.databinding.ActivityMainBinding
+import com.mobile.frotaviva_mobile.storage.SecureStorage
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -21,6 +23,8 @@ import java.util.Locale
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     lateinit var binding: ActivityMainBinding
+
+    private lateinit var secureStorage: SecureStorage
 
     private lateinit var toggle: ActionBarDrawerToggle
     var truckId: Int? = null
@@ -34,6 +38,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        secureStorage = SecureStorage(this)
 
         val toolbar = binding.headerInclude.root
         setSupportActionBar(toolbar)
@@ -115,6 +121,24 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 else -> false
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val token = secureStorage.getToken()
+
+        if (token.isNullOrEmpty() || JwtUtils.isTokenExpired(token)) {
+            redirectToLogin()
+        }
+    }
+
+    private fun redirectToLogin() {
+        val intent = Intent(this, Login::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
