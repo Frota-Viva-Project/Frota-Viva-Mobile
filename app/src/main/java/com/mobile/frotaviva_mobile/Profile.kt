@@ -50,7 +50,8 @@ class Profile : AppCompatActivity() {
             }
 
             it.getChildAt(6).setOnClickListener {
-                Toast.makeText(this, "Navegar para tela de Edição de Senha", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, PasswordEditActivity::class.java)
+                startActivity(intent)
             }
 
             it.getChildAt(8).setOnClickListener {
