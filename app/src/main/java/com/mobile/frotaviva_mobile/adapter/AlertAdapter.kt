@@ -34,9 +34,9 @@ class AlertAdapter(
     override fun onBindViewHolder(holder: AlertViewHolder, position: Int) {
         val alert = items[position]
         holder.binding.alertTitle.text = alert.titulo
-        holder.binding.alertCat2.text = alert.categoria
-        holder.binding.alertCatDesc.text = alert.descricao
-        holder.binding.alertStatusDesc.text = alert.status
+        holder.binding.alertCategory.text = alert.categoria
+        holder.binding.alertDescription.text = alert.descricao
+        holder.binding.alertStatusReport.text = alert.status
 
         val isDone = alert.status == "CONCLUIDO"
 

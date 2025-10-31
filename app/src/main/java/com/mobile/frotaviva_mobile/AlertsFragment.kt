@@ -9,6 +9,8 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +27,7 @@ import com.mobile.frotaviva_mobile.model.Maintenance
 import com.mobile.frotaviva_mobile.model.MaintenanceRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Locale
 
 class AlertsFragment : Fragment() {
 
@@ -37,6 +40,7 @@ class AlertsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var alertAdapter: AlertAdapter
+    private lateinit var originalAlerts: List<Alert>
 
     private val insertAlertLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -145,16 +149,13 @@ class AlertsFragment : Fragment() {
             try {
                 val response = RetrofitClient.instance.getAlerts(truckId)
 
-                // ** CORREÇÃO 3: Checa se o Fragment ainda está anexado após a requisição **
                 if (!isAdded) return@launch
 
                 if (response.isSuccessful) {
                     val alertsList = response.body()
                     alertsList?.let {
-                        setupRecyclerView(it)
-                    } ?: run {
-                        setupRecyclerView(emptyList())
-                        Toast.makeText(requireContext(), "Nenhum alerta encontrada.", Toast.LENGTH_SHORT).show()
+                        originalAlerts = it.sortedByDescending { alert -> alert.id }
+                        setupRecyclerView(originalAlerts)
                     }
                 } else {
                     Toast.makeText(requireContext(), "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
@@ -162,7 +163,6 @@ class AlertsFragment : Fragment() {
                 }
 
             } catch (e: Exception) {
-                // ** CORREÇÃO 4: Checa se o Fragment ainda está anexado antes de mostrar o Toast **
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
                 }
@@ -170,7 +170,6 @@ class AlertsFragment : Fragment() {
                     setupRecyclerView(emptyList())
                 }
             } finally {
-                // ** CORREÇÃO 5: Garante que só acessa o binding se a View não foi destruída **
                 if (_binding != null) {
                     showLoading(false)
                 }
@@ -293,8 +292,50 @@ class AlertsFragment : Fragment() {
 
     private fun setupDropdown() {
         if (_binding == null) return
-        val placeholder = binding.dropdownContainer
-        layoutInflater.inflate(R.layout.dropdown, placeholder, true)
+        val dropdownContainer = binding.dropdownContainer
+
+        dropdownContainer.removeAllViews()
+        layoutInflater.inflate(R.layout.dropdown, dropdownContainer, true)
+
+        val dropdownHeader = dropdownContainer.getChildAt(0) as View
+
+        val displayText = dropdownHeader.findViewById<TextView>(R.id.textView2)
+
+        val categories = listOf("SIMPLES", "INTERMEDIÁRIO", "URGENTE")
+
+        dropdownHeader.setOnClickListener {
+            val popup = PopupMenu(requireContext(), dropdownHeader)
+            categories.forEachIndexed { index, category ->
+                popup.menu.add(0, index, index, category)
+            }
+            popup.setOnMenuItemClickListener { item ->
+                val selectedCategory = item.title.toString()
+                displayText.text = selectedCategory
+                filterByCategory(selectedCategory)
+
+                true
+            }
+
+            popup.show()
+        }
+    }
+
+    private fun filterByCategory(category: String) {
+        if (!::originalAlerts.isInitialized) return
+
+        val query = category.lowercase(Locale.getDefault())
+
+        val filteredList = if (query == "selecionar") {
+            originalAlerts
+        } else {
+            originalAlerts.filter { alert ->
+                alert.categoria.lowercase(Locale.getDefault()).contains(query)
+            }
+        }
+        alertAdapter.updateData(filteredList)
+        if (filteredList.isEmpty()) {
+            Toast.makeText(requireContext(), "Nenhum alerta encontrado na categoria '$category'.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun dpToPx(dp: Int): Int {
