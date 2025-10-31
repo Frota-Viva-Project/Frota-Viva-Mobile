@@ -13,12 +13,16 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.gms.maps.model.StrokeStyle
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.adapter.AlertAdapter
+import com.mobile.frotaviva_mobile.adapter.MaintenanceAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentAlertsBinding
 import com.mobile.frotaviva_mobile.model.Alert
+import com.mobile.frotaviva_mobile.model.Maintenance
+import com.mobile.frotaviva_mobile.model.MaintenanceRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -31,6 +35,8 @@ class AlertsFragment : Fragment() {
 
     private var _binding: FragmentAlertsBinding? = null
     private val binding get() = _binding!!
+
+    private lateinit var alertAdapter: AlertAdapter
 
     private val insertAlertLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -174,9 +180,6 @@ class AlertsFragment : Fragment() {
 
 
     private fun showLoading(isLoading: Boolean) {
-        // Esta função usa 'binding' e, portanto, só deve ser chamada se '_binding' não for nulo.
-        // As chamadas externas já foram verificadas (Correção 5), mas se for chamada diretamente,
-        // a verificação `_binding != null` pode ser adicionada aqui para máxima segurança.
         if (_binding == null) return
 
         if (isLoading) {
@@ -190,20 +193,103 @@ class AlertsFragment : Fragment() {
 
 
     private fun setupRecyclerView(data: List<Alert>) {
-        // Similarmente, esta função usa 'binding'
         if (_binding == null) return
 
-        if (binding.alertRecyclerView.adapter == null) {
-            val recyclerView = binding.alertRecyclerView
-            // Usa requireContext() para a criação do LayoutManager, que precisa de um Context válido
+        val recyclerView = binding.alertRecyclerView
+        val truckId = arguments?.getInt(AlertsFragment.Companion.TRUCK_ID_KEY, 0) ?: 0
+
+        val onDoneCallback: (Int) -> Unit = { alertId ->
+            markAlertAsDone(truckId, alertId)
+        }
+
+        val onSendToMaintenanceCallback: (Int, String, String) -> Unit =
+            { alertId, alertTitle, alertDetails ->
+                sendAlertToMaintenance(truckId, alertId, alertTitle, alertDetails)
+            }
+
+        if (recyclerView.adapter == null) {
+            alertAdapter = AlertAdapter(
+                items = data,
+                onAlertDone = onDoneCallback,
+                onSendToMaintenance = onSendToMaintenanceCallback
+            )
+
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.addItemDecoration(VerticalSpaceItemDecoration(dpToPx(24)))
-            recyclerView.adapter = AlertAdapter(data)
+            recyclerView.adapter = alertAdapter
+
         } else {
-            (binding.alertRecyclerView.adapter as? AlertAdapter)?.updateData(data)
+            (recyclerView.adapter as? AlertAdapter)?.updateData(data)
         }
     }
 
+    private fun markAlertAsDone(truckId: Int, alertId: Int) {
+        if (truckId <= 0) {
+            Toast.makeText(requireContext(), "ID do caminhão não disponível.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.markAlertAsDone(truckId, alertId)
+
+                if (!isAdded) return@launch
+
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Alerta finalizado com sucesso!", Toast.LENGTH_SHORT).show()
+                    fetchAlerts(truckId)
+                } else {
+                    Toast.makeText(requireContext(), "Falha ao finalizar alerta: ${response.code()}", Toast.LENGTH_LONG).show()
+                }
+
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro de conexão ao finalizar alerta: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun sendAlertToMaintenance(truckId: Int, alertId: Int, alertTitle: String, alertDetails: String) {
+        if (truckId <= 0) {
+            Toast.makeText(requireContext(), "ID do caminhão não disponível.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                val markResponse = RetrofitClient.instance.markAlertForMaintenance(truckId, alertId)
+
+                if (!isAdded) return@launch
+
+                if (markResponse.isSuccessful) {
+                    val maintenanceRequest = MaintenanceRequest(
+                        titulo = "Manutenção (Alerta ID $alertId): $alertTitle",
+                        info = alertDetails,
+                    )
+
+                    val maintenanceResponse = RetrofitClient.instance.sendMaintenance(truckId, maintenanceRequest)
+
+                    if (maintenanceResponse.isSuccessful) {
+                        Toast.makeText(requireContext(), "Alerta marcado e Manutenção criada com sucesso!", Toast.LENGTH_LONG).show()
+                        fetchAlerts(truckId)
+                    } else {
+                        Toast.makeText(requireContext(),
+                            "Alerta marcado, mas falha ao criar Manutenção: ${maintenanceResponse.code()}",
+                            Toast.LENGTH_LONG).show()
+                    }
+
+                } else {
+                    Toast.makeText(requireContext(), "Falha ao enviar pra manutenção: ${markResponse.code()}", Toast.LENGTH_LONG).show()
+                }
+
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro de conexão/API ao processar manutenção: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     private fun setupDropdown() {
         if (_binding == null) return

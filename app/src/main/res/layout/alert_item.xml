@@ -18,6 +18,33 @@
         tools:layout_editor_absoluteX="1dp"
         tools:layout_editor_absoluteY="128dp">
 
+        <TextView
+            android:id="@+id/alertStatus"
+            android:layout_width="0dp"
+            android:layout_height="17dp"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/inter_regular"
+            android:text="Status:"
+            android:textColor="@color/neutral_100"
+            android:textFontWeight="700"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/alertCat2" />
+
+        <TextView
+            android:id="@+id/alertStatusDesc"
+            android:layout_width="0dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="4dp"
+            android:fontFamily="@font/inter_regular"
+            android:text="Alerta Pendente"
+            android:textColor="@color/neutral_100"
+            android:textFontWeight="0"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/alertStatus"
+            app:layout_constraintTop_toTopOf="@+id/alertStatus" />
+
         <ImageView
             android:id="@+id/imageView5"
             android:layout_width="24dp"
@@ -66,7 +93,7 @@
 
         <TextView
             android:id="@+id/alertCatInfo"
-            android:layout_width="48dp"
+            android:layout_width="0dp"
             android:layout_height="17dp"
             android:layout_marginStart="4dp"
             android:fontFamily="@font/inter_regular"
@@ -74,12 +101,13 @@
             android:textColor="@color/neutral_100"
             android:textFontWeight="0"
             android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/manInfo"
             app:layout_constraintTop_toTopOf="@+id/manInfo" />
 
         <TextView
             android:id="@+id/alertCatDesc"
-            android:layout_width="243dp"
+            android:layout_width="0dp"
             android:layout_height="16dp"
             android:layout_marginStart="4dp"
             android:fontFamily="@font/inter_regular"
@@ -87,13 +115,14 @@
             android:textColor="@color/neutral_100"
             android:textFontWeight="0"
             android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/alertCat2"
             app:layout_constraintTop_toTopOf="@+id/alertCat2" />
 
         <!-- Botão Solicitar Serviço -->
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/buttonMarkAsFixed"
+            android:id="@+id/buttonMarkAsDone"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_marginTop="16dp"
@@ -102,7 +131,7 @@
             android:focusable="true"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/alertCat2">
+            app:layout_constraintTop_toBottomOf="@+id/alertStatus">
 
             <TextView
                 android:id="@+id/textView24"
@@ -119,23 +148,23 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/buttonAskForService"
+            android:id="@+id/buttonSendtoMaintenance"
             android:layout_width="0dp"
             android:layout_height="40dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/rounded_button_background"
             android:clickable="true"
             android:focusable="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/buttonMarkAsFixed">
+            app:layout_constraintTop_toBottomOf="@+id/buttonMarkAsDone">
 
             <TextView
                 android:id="@+id/textView25"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Solicitar Serviço"
+                android:text="Enviar para manutenção"
                 android:textColor="@color/neutral_0"
                 android:textFontWeight="700"
                 android:textSize="14sp"
