@@ -35,6 +35,8 @@ class Login : AppCompatActivity() {
 
         RetrofitClient.initialize(applicationContext)
 
+        checkPersistentLogin()
+
         binding.navigateToRegister.setOnClickListener {
             startActivity(Intent(this, Register::class.java))
         }
@@ -52,10 +54,7 @@ class Login : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        checkPersistentLogin()
-    }
+    override fun onResume() {super.onResume()}
 
     private fun loginUser(email: String, password: String) {
         firebaseManager.loginUser(email, password,

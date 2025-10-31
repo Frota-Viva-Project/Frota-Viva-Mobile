@@ -83,6 +83,9 @@
         <activity
             android:name=".PasswordEditActivity"
             android:exported="false" />
+        <activity
+            android:name=".VerifyInfoActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
