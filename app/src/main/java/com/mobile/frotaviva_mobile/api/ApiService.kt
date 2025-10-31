@@ -5,11 +5,12 @@ import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 import com.mobile.frotaviva_mobile.model.Maintenance
 import com.mobile.frotaviva_mobile.model.Alert
 import com.mobile.frotaviva_mobile.model.AlertRequest
-import com.mobile.frotaviva_mobile.model.LocationPostResponse
 import com.mobile.frotaviva_mobile.model.LocationUpdateRequest
 import com.mobile.frotaviva_mobile.model.MaintenanceRequest
 import com.mobile.frotaviva_mobile.model.Meter
+import com.mobile.frotaviva_mobile.model.Notification
 import com.mobile.frotaviva_mobile.model.Route
+import com.mobile.frotaviva_mobile.model.TokenRegistrationRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -97,4 +98,10 @@ interface ApiService {
         @Query("id_caminhao") idCaminhao: Int,
         @Query("id_alerta") idAlerta: Int
     ): Response<Unit>
+
+    @PUT("fcm/register")
+    suspend fun registerToken(@Body request: TokenRegistrationRequest): Response<Void>
+
+    @GET("fcm/history/{userId}")
+    suspend fun getNotificationHistory(@Path("userId") userId: String): Response<List<Notification>>
 }
