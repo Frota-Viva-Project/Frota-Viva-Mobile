@@ -55,7 +55,8 @@ class Profile : AppCompatActivity() {
             }
 
             it.getChildAt(8).setOnClickListener {
-                Toast.makeText(this, "Navegar para Verificar informações", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, VerifyInfoActivity::class.java)
+                startActivity(intent)
             }
         }
     }

@@ -15,4 +15,9 @@
     <color name="neutral_100">#F3F4F6</color>
     <color name="neutral_0">#FFFFFF</color>
     <color name="feedback_error_default">#B32D2D</color>
+    <color name="light_blue_600">#FF039BE5</color>
+    <color name="light_blue_900">#FF01579B</color>
+    <color name="light_blue_A200">#FF40C4FF</color>
+    <color name="light_blue_A400">#FF00B0FF</color>
+    <color name="black_overlay">#66000000</color>
 </resources>
