@@ -67,7 +67,8 @@ dependencies {
     // Firebase libs (sem versão, BoM controla)
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-appcheck-ktx") // App Check
+    implementation("com.google.firebase:firebase-appcheck-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     // Outras libs
     implementation("com.github.bumptech.glide:glide:4.16.0")
