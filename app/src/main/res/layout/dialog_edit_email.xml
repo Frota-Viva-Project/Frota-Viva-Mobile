@@ -3,13 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="16dp"
     app:cardCornerRadius="16dp"
     app:cardElevation="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/primary_default"
         android:orientation="vertical"
         android:padding="24dp">
 
@@ -18,7 +18,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Editar Email"
-            android:textColor="@color/neutral_900"
+            android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -26,87 +26,97 @@
             android:id="@+id/dialogSubtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="4dp"
             android:text="Insira o novo e-mail e sua senha atual para confirmar a mudança."
-            android:textColor="@color/neutral_700"
+            android:textColor="@color/white"
             android:textSize="14sp" />
 
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
+            android:id="@+id/inputContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:hintEnabled="false">
+            android:orientation="vertical">
 
             <EditText
                 android:id="@+id/editTextNewEmail"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/rounded_edittext_background"
                 android:hint="Novo Email"
                 android:inputType="textEmailAddress"
-                android:padding="12dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="@color/neutral_900"
                 android:textSize="16sp" />
-        </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:id="@+id/dialogErrorEmail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/feedback_error_default"
-            android:textSize="12sp"
-            android:visibility="gone" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:hintEnabled="false"
-            app:passwordToggleEnabled="true">
+            <TextView
+                android:id="@+id/dialogErrorEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/feedback_error_default"
+                android:textSize="12sp"
+                android:visibility="gone" />
 
             <EditText
                 android:id="@+id/editTextPassword"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/rounded_edittext_background"
                 android:hint="Sua Senha Atual"
                 android:inputType="textPassword"
-                android:padding="12dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="@color/neutral_900"
                 android:textSize="16sp" />
-        </com.google.android.material.textfield.TextInputLayout>
 
+            <TextView
+                android:id="@+id/dialogErrorPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/feedback_error_default"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
         <TextView
-            android:id="@+id/dialogErrorPassword"
+            android:id="@+id/textSuccessMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/feedback_error_default"
-            android:textSize="12sp"
+            android:layout_marginTop="16dp"
+            android:textColor="@color/white"
+            android:textSize="16sp"
             android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
+            android:gravity="end"
             android:orientation="horizontal">
 
             <Button
                 android:id="@+id/buttonCancel"
                 style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:backgroundTint="@color/neutral_300"
-                android:text="Cancelar"
-                android:textColor="@color/neutral_900" />
+                android:layout_marginEnd="8dp"
+                android:text="Voltar"
+                android:textColor="@color/white" />
 
             <Button
                 android:id="@+id/buttonConfirm"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:backgroundTint="@color/primary_default"
-                android:text="Confirmar"
-                android:textColor="@android:color/white" />
+                android:backgroundTint="@color/white"
+                android:text="Editar"
+                android:textColor="@color/black"
+                app:cornerRadius="8dp" />
         </LinearLayout>
 
     </LinearLayout>
