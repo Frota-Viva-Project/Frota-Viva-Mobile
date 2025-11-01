@@ -19,8 +19,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.adapter.MaintenanceAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
+import com.mobile.frotaviva_mobile.auth.JwtUtils
 import com.mobile.frotaviva_mobile.databinding.FragmentMaintenancesBinding
 import com.mobile.frotaviva_mobile.model.Maintenance
+import com.mobile.frotaviva_mobile.storage.SecureStorage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
@@ -35,8 +37,9 @@ class MaintenancesFragment : Fragment() {
     private var _binding: FragmentMaintenancesBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var auth: FirebaseAuth
+    private lateinit var secureStorage: SecureStorage
     private lateinit var maintenanceAdapter: MaintenanceAdapter
-
     private lateinit var originalData: List<Maintenance>
 
     private val insertMaintenanceLauncher = registerForActivityResult(
@@ -59,21 +62,16 @@ class MaintenancesFragment : Fragment() {
     ): View {
         _binding = FragmentMaintenancesBinding.inflate(inflater, container, false)
         binding.buttonAddMaintenance.setOnClickListener {
-            val context = requireContext()
             val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
-
-            val intent = Intent(context, InsertMaintenance::class.java).apply {
+            val intent = Intent(requireContext(), InsertMaintenance::class.java).apply {
                 putExtra(TRUCK_ID_KEY, truckIdFromBundle)
             }
-
             insertMaintenanceLauncher.launch(intent)
         }
 
         binding.searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-
             override fun afterTextChanged(s: Editable?) {
                 filter(s.toString().lowercase(Locale.getDefault()))
             }
@@ -84,9 +82,43 @@ class MaintenancesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupRecyclerView(emptyList())
 
-        fetchTruckIdAndLoadData()
+        auth = FirebaseAuth.getInstance()
+        secureStorage = SecureStorage(requireContext())
+
+        setupRecyclerView(emptyList())
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isUserAuthenticated()) {
+            fetchTruckIdAndLoadData()
+        } else {
+            redirectToLogin()
+        }
+    }
+
+    private fun isUserAuthenticated(): Boolean {
+        val token = secureStorage.getToken()
+
+        if (!token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token)) {
+            return true
+        }
+
+        return auth.currentUser != null
+    }
+
+    private fun redirectToLogin() {
+        Toast.makeText(requireContext(), "Sessão expirada. Faça login novamente.", Toast.LENGTH_LONG).show()
+
+        secureStorage.clearToken()
+        auth.signOut()
+
+        val intent = Intent(requireContext(), Login::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        requireActivity().finish()
     }
 
     private fun showLoading(isLoading: Boolean) {
@@ -109,17 +141,15 @@ class MaintenancesFragment : Fragment() {
             return
         }
 
-        val user = FirebaseAuth.getInstance().currentUser
+        val user = auth.currentUser
         val db = FirebaseFirestore.getInstance()
 
         if (user == null) {
-            Toast.makeText(requireContext(), "Usuário não autenticado", Toast.LENGTH_LONG).show()
-            setupRecyclerView(emptyList())
+            redirectToLogin()
             return
         }
 
         val userId = user.uid
-
         showLoading(true)
 
         lifecycleScope.launch {
@@ -155,7 +185,6 @@ class MaintenancesFragment : Fragment() {
         }
     }
 
-
     private fun fetchMaintenances(truckId: Int) {
         showLoading(true)
 
@@ -171,7 +200,6 @@ class MaintenancesFragment : Fragment() {
                     maintenancesList?.let {
                         originalData = it
                         setupRecyclerView(it)
-
                     } ?: run {
                         setupRecyclerView(emptyList())
                         Toast.makeText(requireContext(), "Nenhuma manutenção encontrada.", Toast.LENGTH_SHORT).show()
@@ -180,7 +208,6 @@ class MaintenancesFragment : Fragment() {
                     Toast.makeText(requireContext(), "Erro ao carregar manutenções: ${response.code()}", Toast.LENGTH_LONG).show()
                     setupRecyclerView(emptyList())
                 }
-
             } catch (e: Exception) {
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
@@ -214,7 +241,6 @@ class MaintenancesFragment : Fragment() {
                 } else {
                     Toast.makeText(requireContext(), "Falha ao finalizar manutenção: ${response.code()}", Toast.LENGTH_LONG).show()
                 }
-
             } catch (e: Exception) {
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Erro de conexão ao finalizar manutenção: ${e.message}", Toast.LENGTH_LONG).show()
@@ -241,10 +267,9 @@ class MaintenancesFragment : Fragment() {
                 } else {
                     Toast.makeText(requireContext(), "Falha ao solicitar serviço pra manutenção: ${response.code()}", Toast.LENGTH_LONG).show()
                 }
-
             } catch (e: Exception) {
                 if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão ao soliciter serviço pra manutenção: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "Erro de conexão ao solicitar serviço pra manutenção: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -274,7 +299,6 @@ class MaintenancesFragment : Fragment() {
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.addItemDecoration(VerticalSpaceItemDecoration(dpToPx(24)))
             recyclerView.adapter = maintenanceAdapter
-
         } else {
             (recyclerView.adapter as? MaintenanceAdapter)?.updateData(data)
         }
@@ -284,10 +308,9 @@ class MaintenancesFragment : Fragment() {
         val filteredList: MutableList<Maintenance> = mutableListOf()
         val query = text.lowercase()
 
-        for (item in originalData){
+        for (item in originalData) {
             if (item.titulo.lowercase().contains(query) ||
                 item.info.lowercase().contains(query)) {
-
                 filteredList.add(item)
             }
         }

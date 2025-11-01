@@ -17,6 +17,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.storage.SecureStorage
@@ -28,7 +29,6 @@ class VerifyInfoActivity : AppCompatActivity() {
     private lateinit var secureStorage: SecureStorage
     private var currentUserId: String? = null
 
-    // UI Elements
     private lateinit var textNome: TextView
     private lateinit var textEmail: TextView
     private lateinit var textPlaca: TextView
@@ -36,6 +36,11 @@ class VerifyInfoActivity : AppCompatActivity() {
 
     private var currentDialog: AlertDialog? = null
     private val TAG = "VerifyInfoActivity"
+
+    private val PREFS_NAME = "verify_email_prefs"
+    private val KEY_PENDING_EMAIL = "pending_email"
+
+    private var idTokenListener: FirebaseAuth.IdTokenListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +61,8 @@ class VerifyInfoActivity : AppCompatActivity() {
             insets
         }
 
+        setupAuthTokenListener()
+
         loadUserData()
 
         findViewById<ImageButton>(R.id.backButton).setOnClickListener {
@@ -66,7 +73,7 @@ class VerifyInfoActivity : AppCompatActivity() {
 
         findViewById<ImageButton>(R.id.editNome).setOnClickListener {
             val currentValue = textNome.text.toString().substringAfter(": ").trim()
-            showEditFieldDialog("Nome", currentValue, "Insira o seu novo nome", "Seu nome")
+            showEditFieldDialog("Nome", currentValue, "Insira o seu novo nome", "Novo nome")
         }
         findViewById<ImageButton>(R.id.editPlaca).setOnClickListener {
             val currentValue = textPlaca.text.toString().substringAfter(": ").trim()
@@ -85,20 +92,73 @@ class VerifyInfoActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        loadUserData()
+        auth.currentUser?.let { user ->
+            user.reload().addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    checkPendingEmailAndSync(user)
+                } else {
+                    Log.e(TAG, "reload onResume falhou: ${task.exception?.message}")
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        idTokenListener?.let { auth.removeIdTokenListener(it) }
+    }
+
     private fun loadUserData() {
         val user = auth.currentUser
 
         currentUserId = user?.uid
 
-        textNome.text = "Nome: ${user?.displayName ?: "Não definido"}"
-        textEmail.text = "Email: ${user?.email ?: "Não definido"}"
+        user?.reload()?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val updatedUser = auth.currentUser
 
-        currentUserId?.let { userId ->
-            db.collection("users").document(userId).get()
+                val authEmail = updatedUser?.email ?: "Não definido"
+                textNome.text = "Nome: ${updatedUser?.displayName ?: "Não definido"}"
+                textEmail.text = "Email: $authEmail"
+
+                loadFirestoreData(updatedUser?.uid, authEmail)
+
+                updatedUser?.let { checkPendingEmailAndSync(it) }
+
+            } else {
+                val userEmail = user?.email ?: "Não definido"
+                textNome.text = "Nome: ${user?.displayName ?: "Não definido"}"
+                textEmail.text = "Email: $userEmail"
+                loadFirestoreData(user?.uid, userEmail)
+                Log.e(TAG, "Erro ao recarregar dados do usuário: ${task.exception?.message}")
+            }
+        } ?: run {
+            loadFirestoreData(null, null)
+        }
+    }
+
+    private fun loadFirestoreData(userId: String?, authEmail: String?) {
+        if (userId != null) {
+            db.collection("driver").document(userId).get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
-                        textPlaca.text = "Placa: ${document.getString("placa") ?: "Não definida"}"
-                        textTelefone.text = "Telefone: ${document.getString("telefone") ?: "Não definido"}"
+                        val firestoreEmail = document.getString("email")
+
+                        if (authEmail != null && firestoreEmail != authEmail) {
+                            db.collection("driver").document(userId).update("email", authEmail)
+                                .addOnSuccessListener {
+                                    Log.d(TAG, "Firestore 'email' sincronizado com o Firebase Auth: $authEmail")
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.e(TAG, "Erro ao sincronizar Firestore 'email'.", e)
+                                }
+                        }
+
+                        textPlaca.text = "Placa: ${document.getString("carPlate") ?: "Não definida"}"
+                        textTelefone.text = "Telefone: ${document.getString("phone") ?: "Não definido"}"
                     } else {
                         textPlaca.text = "Placa: Não definida"
                         textTelefone.text = "Telefone: Não definido"
@@ -108,7 +168,7 @@ class VerifyInfoActivity : AppCompatActivity() {
                     Log.e(TAG, "Error fetching user data", e)
                     Toast.makeText(this, "Erro ao carregar dados.", Toast.LENGTH_SHORT).show()
                 }
-        } ?: run {
+        } else {
             textPlaca.text = "Placa: Não definida"
             textTelefone.text = "Telefone: Não definido"
         }
@@ -135,7 +195,6 @@ class VerifyInfoActivity : AppCompatActivity() {
     }
 
     private fun showEditFieldDialog(fieldName: String, currentValue: String, subtitle: String, hint: String) {
-        // Este dialog é para campos que NÃO precisam de reautenticação (Nome, Placa, Telefone)
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_field, null)
 
         val title = dialogView.findViewById<TextView>(R.id.dialogTitle)
@@ -147,11 +206,15 @@ class VerifyInfoActivity : AppCompatActivity() {
 
         title.text = "Editar $fieldName"
         sub.text = subtitle
-        editText.setText(currentValue)
+
         editText.hint = hint
 
         when (fieldName) {
             "Telefone" -> editText.inputType = android.text.InputType.TYPE_CLASS_PHONE
+            "Placa" -> {
+                editText.inputType = android.text.InputType.TYPE_CLASS_TEXT
+                editText.setAllCaps(true)
+            }
             else -> editText.inputType = android.text.InputType.TYPE_CLASS_TEXT
         }
 
@@ -176,8 +239,8 @@ class VerifyInfoActivity : AppCompatActivity() {
 
             when (fieldName) {
                 "Nome" -> updateDisplayName(newValue)
-                "Placa" -> updateFirestoreField("placa", newValue)
-                "Telefone" -> updateFirestoreField("telefone", newValue)
+                "Placa" -> updateFirestoreField("carPlate", newValue)
+                "Telefone" -> updateFirestoreField("phone", newValue)
             }
         }
 
@@ -188,6 +251,11 @@ class VerifyInfoActivity : AppCompatActivity() {
     private fun showEditEmailDialog(currentEmail: String) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_email, null)
 
+        val inputContainer = dialogView.findViewById<View>(R.id.inputContainer)
+        val textSuccessMessage = dialogView.findViewById<TextView>(R.id.textSuccessMessage)
+
+        val title = dialogView.findViewById<TextView>(R.id.dialogTitle)
+        val subtitle = dialogView.findViewById<TextView>(R.id.dialogSubtitle)
         val editNewEmail = dialogView.findViewById<EditText>(R.id.editTextNewEmail)
         val editPassword = dialogView.findViewById<EditText>(R.id.editTextPassword)
         val errorEmail = dialogView.findViewById<TextView>(R.id.dialogErrorEmail)
@@ -195,8 +263,16 @@ class VerifyInfoActivity : AppCompatActivity() {
         val btnCancel = dialogView.findViewById<Button>(R.id.buttonCancel)
         val btnConfirm = dialogView.findViewById<Button>(R.id.buttonConfirm)
 
-        editNewEmail.setText(currentEmail)
+        editNewEmail.hint = "Novo Email"
         editNewEmail.inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+
+        inputContainer.visibility = View.VISIBLE
+        textSuccessMessage.visibility = View.GONE
+        btnConfirm.visibility = View.VISIBLE
+
+        title.text = "Editar Email"
+        subtitle.visibility = View.VISIBLE
+        subtitle.text = "Informe seu novo email e sua senha atual para confirmar a alteração."
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -227,7 +303,11 @@ class VerifyInfoActivity : AppCompatActivity() {
             btnConfirm.isEnabled = false
             btnCancel.isEnabled = false
 
-            reauthenticateAndUpdateEmail(newEmail, password, errorPassword, btnConfirm, btnCancel, dialog)
+            reauthenticateAndUpdateEmail(
+                newEmail, password, currentEmail,
+                errorPassword, btnConfirm, btnCancel, dialog,
+                inputContainer, textSuccessMessage, title, subtitle
+            )
         }
 
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
@@ -237,40 +317,61 @@ class VerifyInfoActivity : AppCompatActivity() {
     private fun reauthenticateAndUpdateEmail(
         newEmail: String,
         password: String,
+        oldEmail: String,
         errorView: TextView,
         btnConfirm: Button,
         btnCancel: Button,
-        dialog: AlertDialog
+        dialog: AlertDialog,
+        inputContainer: View,
+        textSuccessMessage: TextView,
+        title: TextView,
+        subtitle: TextView
     ) {
         val user = auth.currentUser
 
-        if (user?.email == null) {
-            Toast.makeText(this, "Erro: Usuário não encontrado ou sem e-mail.", Toast.LENGTH_SHORT).show()
+        if (user == null || oldEmail.isEmpty()) {
+            Toast.makeText(this, "Erro: Usuário não autenticado ou e-mail de referência não encontrado.", Toast.LENGTH_SHORT).show()
             btnConfirm.isEnabled = true
             btnCancel.isEnabled = true
+            forceLogout()
             return
         }
 
-        val credential = EmailAuthProvider.getCredential(user.email!!, password)
+        val credential = EmailAuthProvider.getCredential(oldEmail, password)
 
         user.reauthenticate(credential)
             .addOnSuccessListener {
-                Log.d(TAG, "Reautenticação de e-mail bem-sucedida. Tentando atualizar...")
-                user.updateEmail(newEmail)
+                user.verifyBeforeUpdateEmail(newEmail)
                     .addOnSuccessListener {
-                        Log.d(TAG, "Email atualizado no Auth com sucesso.")
-                        updateFirestoreField("email", newEmail)
-                        dialog.dismiss()
+                        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                        prefs.edit().putString(KEY_PENDING_EMAIL, newEmail).apply()
+
+                        inputContainer.visibility = View.GONE
+                        btnConfirm.visibility = View.GONE
+
+                        title.text = "Sucesso!"
+                        subtitle.visibility = View.GONE
+
+                        textSuccessMessage.text = "Link de Verificação Enviado! Enviamos um e-mail para $newEmail com um link para confirmar a alteração. Após clicar no link, você precisará fazer login novamente com o novo e-mail."
+                        textSuccessMessage.visibility = View.VISIBLE
+
+                        btnCancel.isEnabled = true
+                        btnCancel.text = "FECHAR"
+
+                        btnCancel.setOnClickListener {
+                            dialog.dismiss()
+                            forceLogoutWithMessage("Verifique seu e-mail e faça login novamente.")
+                        }
+
+                        Toast.makeText(this, "Verifique seu e-mail para concluir a mudança.", Toast.LENGTH_LONG).show()
                     }
                     .addOnFailureListener { e ->
-                        Log.w(TAG, "Falha ao atualizar email", e)
-                        showDialogError(errorView, "Erro ao atualizar email: ${e.message}")
+                        showDialogError(errorView, "Erro ao enviar link de verificação. ${e.message}")
                         btnConfirm.isEnabled = true
                         btnCancel.isEnabled = true
                     }
             }
             .addOnFailureListener { e ->
-                Log.w(TAG, "Reautenticação para e-mail falhou", e)
                 showDialogError(errorView, "Senha incorreta. Reautenticação falhou.")
                 btnConfirm.isEnabled = true
                 btnCancel.isEnabled = true
@@ -334,22 +435,18 @@ class VerifyInfoActivity : AppCompatActivity() {
             val credential = EmailAuthProvider.getCredential(user.email!!, oldPassword)
             user.reauthenticate(credential)
                 .addOnSuccessListener {
-                    Log.d(TAG, "Reautenticação bem-sucedida.")
                     user.updatePassword(newPassword)
                         .addOnSuccessListener {
-                            Log.d(TAG, "Senha atualizada com sucesso.")
                             Toast.makeText(this, "Senha alterada com sucesso!", Toast.LENGTH_LONG).show()
                             dialog.dismiss()
                         }
                         .addOnFailureListener { e ->
-                            Log.w(TAG, "Falha ao atualizar senha", e)
                             showDialogError(errorNew, "Erro ao atualizar senha: ${e.message}")
                             btnConfirm.isEnabled = true
                             btnCancel.isEnabled = true
                         }
                 }
                 .addOnFailureListener { e ->
-                    Log.w(TAG, "Reautenticação falhou", e)
                     showDialogError(errorOld, "Senha antiga incorreta.")
                     btnConfirm.isEnabled = true
                     btnCancel.isEnabled = true
@@ -368,7 +465,7 @@ class VerifyInfoActivity : AppCompatActivity() {
 
         user?.updateProfile(profileUpdates)?.addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                updateFirestoreField("nome", newName)
+                updateFirestoreField("name", newName)
             } else {
                 Toast.makeText(this, "Falha ao atualizar nome.", Toast.LENGTH_SHORT).show()
                 currentDialog?.dismiss()
@@ -377,14 +474,17 @@ class VerifyInfoActivity : AppCompatActivity() {
     }
 
     private fun updateFirestoreField(field: String, value: String) {
-        // ... (função já estava correta)
+        if (currentUserId == null) {
+            currentUserId = auth.currentUser?.uid
+        }
+
         if (currentUserId == null) {
             Toast.makeText(this, "Erro: ID de usuário não encontrado.", Toast.LENGTH_SHORT).show()
             currentDialog?.dismiss()
             return
         }
 
-        db.collection("users").document(currentUserId!!)
+        db.collection("driver").document(currentUserId!!)
             .update(field, value)
             .addOnSuccessListener {
                 Toast.makeText(this, "${field.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} atualizado com sucesso!", Toast.LENGTH_SHORT).show()
@@ -396,5 +496,59 @@ class VerifyInfoActivity : AppCompatActivity() {
                 Log.e(TAG, "Error updating $field", e)
                 currentDialog?.dismiss()
             }
+    }
+
+    private fun setupAuthTokenListener() {
+        idTokenListener = FirebaseAuth.IdTokenListener { firebaseAuth ->
+            val usr = firebaseAuth.currentUser
+            if (usr != null) {
+                usr.reload().addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        checkPendingEmailAndSync(usr)
+                    } else {
+                        Log.e(TAG, "reload no IdTokenListener falhou: ${task.exception?.message}")
+                    }
+                }
+            }
+        }
+        idTokenListener?.let { auth.addIdTokenListener(it) }
+    }
+
+    private fun checkPendingEmailAndSync(user: FirebaseUser) {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val pending = prefs.getString(KEY_PENDING_EMAIL, null) ?: return
+
+        val currentAuthEmail = user.email
+        if (currentAuthEmail != null && currentAuthEmail == pending) {
+            currentUserId = user.uid
+            db.collection("driver").document(currentUserId!!)
+                .update("email", pending)
+                .addOnSuccessListener {
+                    Log.d(TAG, "Pending email sincronizado no Firestore: $pending")
+                    Toast.makeText(this, "E-mail confirmado e atualizado com sucesso!", Toast.LENGTH_SHORT).show()
+                    prefs.edit().remove(KEY_PENDING_EMAIL).apply()
+                    loadUserData()
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Erro ao sincronizar pending email no Firestore", e)
+                }
+        } else {
+            Log.d(TAG, "pendingEmail existe mas Auth ainda não mudou: pending=$pending auth=$currentAuthEmail")
+        }
+    }
+
+    private fun forceLogout() {
+        auth.signOut()
+        secureStorage.clearToken()
+        val intent = Intent(this, Login::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
+    }
+
+    private fun forceLogoutWithMessage(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        forceLogout()
     }
 }

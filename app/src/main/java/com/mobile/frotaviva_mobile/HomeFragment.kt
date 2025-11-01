@@ -4,6 +4,7 @@ import VerticalSpaceItemDecoration
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.location.Geocoder
@@ -36,13 +37,13 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.mobile.frotaviva_mobile.adapter.AlertAdapter
 import com.mobile.frotaviva_mobile.adapter.NotificationAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
+import com.mobile.frotaviva_mobile.auth.JwtUtils
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
 import com.mobile.frotaviva_mobile.fragments.RoutesDialogFragment
-import com.mobile.frotaviva_mobile.model.Alert
 import com.mobile.frotaviva_mobile.model.Notification
+import com.mobile.frotaviva_mobile.storage.SecureStorage
 import com.mobile.frotaviva_mobile.worker.LocationTrackingWorker
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -53,6 +54,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val db = FirebaseFirestore.getInstance()
+    private lateinit var auth: FirebaseAuth
+    private lateinit var secureStorage: SecureStorage
 
     private lateinit var googleMap: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -92,6 +95,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        auth = FirebaseAuth.getInstance()
+        secureStorage = SecureStorage(requireContext())
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
@@ -114,12 +119,44 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
         binding.mapClickOverlay.setOnClickListener {
             openFullScreenMap()
         }
+    }
 
-        val user = FirebaseAuth.getInstance().currentUser
+    override fun onResume() {
+        super.onResume()
+        if (isUserAuthenticated()) {
+            loadInitialData()
+        } else {
+            redirectToLogin()
+        }
+    }
+
+    private fun isUserAuthenticated(): Boolean {
+        val token = secureStorage.getToken()
+
+        if (!token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token)) {
+            return true
+        }
+
+        return auth.currentUser != null
+    }
+
+    private fun redirectToLogin() {
+        Toast.makeText(requireContext(), "Sessão expirada. Faça login novamente.", Toast.LENGTH_LONG).show()
+
+        secureStorage.clearToken()
+        auth.signOut()
+
+        val intent = Intent(requireContext(), Login::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        requireActivity().finish()
+    }
+
+    private fun loadInitialData() {
+        val user = auth.currentUser
         if (user != null) {
-            user.getIdToken(true).addOnSuccessListener {
-                fetchDriverAndTruckDetails(user.uid)
-            }
+            fetchDriverAndTruckDetails(user.uid)
         } else {
             updateDriverDetailsDisplay(
                 getString(R.string.unauthenticated),
@@ -141,14 +178,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
     override fun onRoutesFetched(mainRoute: com.mobile.frotaviva_mobile.model.Route?) {
         if (mainRoute != null) {
             updateRouteDisplay(mainRoute.destinoInicial, mainRoute.destinoFinal)
-
             binding.routeContainer.visibility = View.VISIBLE
         } else {
             updateRouteDisplay(getString(R.string.no_active_route), getString(R.string.no_active_route))
             binding.routeContainer.visibility = View.GONE
         }
     }
-
 
     private fun fetchRoutes(truckId: Int) {
         lifecycleScope.launch {
@@ -158,11 +193,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                 if (!isAdded) return@launch
 
                 if (response.isSuccessful) {
-                    val activeRoute = response.body()
-                        ?.firstOrNull { it.status == "EM ROTA" }
+                    val activeRoute = response.body()?.firstOrNull { it.status == "EM ROTA" }
                     onRoutesFetched(activeRoute)
                 }
             } catch (e: Exception) {
+                Log.e("HomeFragment", "Error fetching routes", e)
             }
         }
     }
@@ -184,20 +219,19 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                             meterData.velocidadeVeiculo.toInt()
                         )
                     } else {
-                        updateMetersDisplay(0,0,0)
-                        Toast.makeText(requireContext(), "Dados dos medidores não retornaram",
-                            Toast.LENGTH_SHORT).show();
+                        updateMetersDisplay(0, 0, 0)
+                        Toast.makeText(requireContext(), "Dados dos medidores não retornaram", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(requireContext(), "Erro ao carregar medidores: ${response.code()}", Toast.LENGTH_LONG).show()
-                    updateMetersDisplay(0,0,0)
+                    updateMetersDisplay(0, 0, 0)
                 }
             } catch (e: Exception) {
                 if (isAdded) {
                     Log.e("API_CATCH", "Erro de conexão/API: ${e.message}", e)
                     Toast.makeText(requireContext(), "Erro de conexão/API", Toast.LENGTH_LONG).show()
                 }
-                updateMetersDisplay(0,0,0)
+                updateMetersDisplay(0, 0, 0)
             }
         }
     }
@@ -217,17 +251,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                         setupRecyclerView(it)
                     } ?: run {
                         setupRecyclerView(emptyList())
-                        Toast.makeText(context, "Nenhuma notificação encontrada.", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(requireContext(), "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
                     setupRecyclerView(emptyList())
                 }
-
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast     .LENGTH_LONG).show()
-                }
                 if (_binding != null) {
                     setupRecyclerView(emptyList())
                 }
@@ -245,18 +273,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
         val recyclerView = binding.notificationRecycler
 
         if (recyclerView.adapter == null) {
-            notificationAdapter = NotificationAdapter(
-                items = data
-            )
-
+            notificationAdapter = NotificationAdapter(items = data)
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.adapter = notificationAdapter
-
         } else {
             (recyclerView.adapter as? NotificationAdapter)?.updateData(data)
         }
     }
-
 
     private fun updateRouteDisplay(departure: String, arrival: String) {
         if (_binding == null) return
@@ -264,12 +287,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
         binding.routeArrival.text = arrival
     }
 
-
-    private fun updateMetersDisplay(
-        fuelLevel: Int,
-        loadMotor: Int,
-        speed: Int
-    ) {
+    private fun updateMetersDisplay(fuelLevel: Int, loadMotor: Int, speed: Int) {
         if (_binding == null) return
 
         binding.progressBarFuel.progress = fuelLevel
@@ -345,9 +363,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
     private fun openAllRoutesModal(truckId: Int) {
         val dialog = RoutesDialogFragment.newInstance(truckId)
-
         dialog.setRouteUpdateListener(this)
-
         dialog.show(childFragmentManager, RoutesDialogFragment.TAG)
     }
 
@@ -366,8 +382,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
             .build()
 
         WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(
-            LocationTrackingWorker.WORK_TAG, // Nome único para a fila
-            ExistingPeriodicWorkPolicy.UPDATE, // Atualiza se a política já existir
+            LocationTrackingWorker.WORK_TAG,
+            ExistingPeriodicWorkPolicy.UPDATE,
             locationWorkRequest
         )
     }
@@ -388,12 +404,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                     val carPlate = document.getString("carPlate") ?: getString(R.string.data_not_found)
 
                     val truckId = document.getLong("truckId")?.toInt()
+                    val idMapsFromFirestore = document.getLong("idMaps")?.toInt()
 
-                    var idMapsFromFirestore: Int? = 0
-
-                    idMapsFromFirestore = document.getLong("idMaps")?.toInt()
-
-                    if (truckId != null && truckId > 0 && idMapsFromFirestore !=null && idMapsFromFirestore >0) {
+                    if (truckId != null && truckId > 0 && idMapsFromFirestore != null && idMapsFromFirestore > 0) {
                         (activity as? MainActivity)?.truckId = truckId
 
                         with(sharedPref.edit()) {
@@ -410,7 +423,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                     }
 
                     updateDriverDetailsDisplay(name, carModel, carPlate)
-
                 } else {
                     updateDriverDetailsDisplay(
                         getString(R.string.loading_error),
@@ -428,7 +440,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                     getString(R.string.loading_error),
                     getString(R.string.loading_error)
                 )
-                Log.e("HomeFragment", "Falha ao buscar detalhes do motorista", it)
+                Log.e("HomeFragment", "Failed to fetch driver details", it)
             }
     }
 
