@@ -1,6 +1,5 @@
 package com.mobile.frotaviva_mobile
 
-import VerticalSpaceItemDecoration
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -16,8 +15,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
+import androidx.core.content.ContentProviderCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -36,12 +37,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.mobile.frotaviva_mobile.adapter.AlertAdapter
 import com.mobile.frotaviva_mobile.adapter.NotificationAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
 import com.mobile.frotaviva_mobile.fragments.RoutesDialogFragment
-import com.mobile.frotaviva_mobile.model.Alert
 import com.mobile.frotaviva_mobile.model.Notification
 import com.mobile.frotaviva_mobile.worker.LocationTrackingWorker
 import kotlinx.coroutines.launch
