@@ -1,5 +1,6 @@
 package com.mobile.frotaviva_mobile
 
+import VerticalSpaceItemDecoration
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -19,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -34,9 +36,13 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.mobile.frotaviva_mobile.adapter.AlertAdapter
+import com.mobile.frotaviva_mobile.adapter.NotificationAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentHomeBinding
 import com.mobile.frotaviva_mobile.fragments.RoutesDialogFragment
+import com.mobile.frotaviva_mobile.model.Alert
+import com.mobile.frotaviva_mobile.model.Notification
 import com.mobile.frotaviva_mobile.worker.LocationTrackingWorker
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -50,6 +56,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
     private lateinit var googleMap: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var notificationAdapter: NotificationAdapter
     private val PIN_SIZE_DP = 64
 
     private val isPermissionGranted
@@ -194,6 +201,62 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
             }
         }
     }
+
+    private fun fetchNotifications(userId: Int) {
+        showLoading(true)
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.getNotificationHistory(userId)
+
+                if (!isAdded) return@launch
+
+                if (response.isSuccessful) {
+                    val notificationsList = response.body()
+                    notificationsList?.let {
+                        setupRecyclerView(it)
+                    } ?: run {
+                        setupRecyclerView(emptyList())
+                        Toast.makeText(context, "Nenhuma notificação encontrada.", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
+                    setupRecyclerView(emptyList())
+                }
+
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast     .LENGTH_LONG).show()
+                }
+                if (_binding != null) {
+                    setupRecyclerView(emptyList())
+                }
+            } finally {
+                if (_binding != null) {
+                    showLoading(false)
+                }
+            }
+        }
+    }
+
+    private fun setupRecyclerView(data: List<Notification>) {
+        if (_binding == null) return
+
+        val recyclerView = binding.notificationRecycler
+
+        if (recyclerView.adapter == null) {
+            notificationAdapter = NotificationAdapter(
+                items = data
+            )
+
+            recyclerView.layoutManager = LinearLayoutManager(requireContext())
+            recyclerView.adapter = notificationAdapter
+
+        } else {
+            (recyclerView.adapter as? NotificationAdapter)?.updateData(data)
+        }
+    }
+
 
     private fun updateRouteDisplay(departure: String, arrival: String) {
         if (_binding == null) return
@@ -343,6 +406,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
                         fetchRoutes(truckId)
                         fetchMeters(truckId)
+                        fetchNotifications(truckId)
                     }
 
                     updateDriverDetailsDisplay(name, carModel, carPlate)

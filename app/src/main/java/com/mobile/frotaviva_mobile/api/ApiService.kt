@@ -103,5 +103,5 @@ interface ApiService {
     suspend fun registerToken(@Body request: TokenRegistrationRequest): Response<Void>
 
     @GET("fcm/history/{userId}")
-    suspend fun getNotificationHistory(@Path("userId") userId: String): Response<List<Notification>>
+    suspend fun getNotificationHistory(@Path("userId") userId: Int): Response<List<Notification>>
 }
