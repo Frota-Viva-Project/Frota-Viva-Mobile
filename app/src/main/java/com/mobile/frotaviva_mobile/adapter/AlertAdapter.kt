@@ -40,7 +40,7 @@ class AlertAdapter(
 
         val isDone = alert.status == "CONCLUIDO"
 
-        val isServiceAsked = alert.status == "SERVICO;"
+        val isServiceAsked = alert.status == "MANUTENÇÃO"
 
         holder.binding.buttonMarkAsDone.visibility =
             if (isDone) View.GONE else View.VISIBLE

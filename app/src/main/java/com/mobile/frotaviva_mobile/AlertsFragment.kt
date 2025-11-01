@@ -15,15 +15,12 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.gms.maps.model.StrokeStyle
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.adapter.AlertAdapter
-import com.mobile.frotaviva_mobile.adapter.MaintenanceAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.FragmentAlertsBinding
 import com.mobile.frotaviva_mobile.model.Alert
-import com.mobile.frotaviva_mobile.model.Maintenance
 import com.mobile.frotaviva_mobile.model.MaintenanceRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -47,7 +44,7 @@ class AlertsFragment : Fragment() {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
-            val shouldReload = data?.getBooleanExtra(AlertsFragment.Companion.RELOAD_KEY, false) ?: false
+            val shouldReload = data?.getBooleanExtra(RELOAD_KEY, false) ?: false
 
             if (shouldReload) {
                 fetchTruckIdAndLoadData()
@@ -61,16 +58,23 @@ class AlertsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentAlertsBinding.inflate(inflater, container, false)
+
+        val user = FirebaseAuth.getInstance().currentUser
+        val userName = user?.displayName ?: "Motorista"
+
         binding.buttonAddAlert.setOnClickListener {
             val context = requireContext()
-            val truckIdFromBundle = arguments?.getInt(AlertsFragment.Companion.TRUCK_ID_KEY, 0)
+            val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
 
             val intent = Intent(context, InsertAlert::class.java).apply {
-                putExtra(AlertsFragment.Companion.TRUCK_ID_KEY, truckIdFromBundle)
+                putExtra(TRUCK_ID_KEY, truckIdFromBundle)
             }
 
             insertAlertLauncher.launch(intent)
         }
+
+        binding.alertCount.text = "$userName, carregando alertas..."
+
         return binding.root
     }
 
@@ -84,16 +88,16 @@ class AlertsFragment : Fragment() {
     private fun fetchTruckIdAndLoadData() {
         val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
 
+        val user = FirebaseAuth.getInstance().currentUser
+
         if (truckIdFromBundle != null && truckIdFromBundle > 0) {
             fetchAlerts(truckIdFromBundle)
             return
         }
 
-        val user = FirebaseAuth.getInstance().currentUser
         val db = FirebaseFirestore.getInstance()
 
         if (user == null) {
-            // Usa requireContext() pois estamos em onViewCreated, o fragment está anexado.
             Toast.makeText(requireContext(), "Usuário não autenticado", Toast.LENGTH_LONG).show()
             setupRecyclerView(emptyList())
             return
@@ -107,7 +111,6 @@ class AlertsFragment : Fragment() {
             try {
                 val snapshot = db.collection("driver").document(userId).get().await()
 
-                // ** CORREÇÃO 1: Checa se o Fragment ainda está anexado antes de prosseguir com UI **
                 if (!isAdded) return@launch
 
                 if (snapshot.exists()) {
@@ -126,13 +129,9 @@ class AlertsFragment : Fragment() {
                     showLoading(false)
                 }
             } catch (e: Exception) {
-                // ** CORREÇÃO 2: Checa se o Fragment ainda está anexado antes de mostrar o Toast **
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
                 }
-                // O `_binding != null` é a checagem implícita feita pelo `binding get() = _binding!!`
-                // Como esta checagem está dentro do `lifecycleScope`, se o job não foi cancelado,
-                // significa que a View provavelmente ainda existe, mas a checagem `!isAdded` acima é a mais segura.
                 if (_binding != null) {
                     setupRecyclerView(emptyList())
                     showLoading(false)
@@ -140,7 +139,6 @@ class AlertsFragment : Fragment() {
             }
         }
     }
-
 
     private fun fetchAlerts(truckId: Int) {
         showLoading(true)
@@ -153,9 +151,33 @@ class AlertsFragment : Fragment() {
 
                 if (response.isSuccessful) {
                     val alertsList = response.body()
+
                     alertsList?.let {
-                        originalAlerts = it.sortedByDescending { alert -> alert.id }
+                        originalAlerts = it.sortedBy { alert -> alert.id }
                         setupRecyclerView(originalAlerts)
+
+                        val pendingCount = originalAlerts.count { alert ->
+                            alert.status.equals("PENDENTE", ignoreCase = true)
+                        }
+
+                        val user = FirebaseAuth.getInstance().currentUser
+                        val db = FirebaseFirestore.getInstance()
+
+                        if (user != null) {
+                            val snapshot = db.collection("driver").document(user.uid).get().await()
+                            val driverName = snapshot.getString("name") ?: "Motorista"
+
+                            if (_binding != null && isAdded && pendingCount == 1) {
+                                binding.alertCount.text = "$driverName, você tem $pendingCount alerta pendente"
+                            }
+                            else if (_binding != null && isAdded) {
+                                binding.alertCount.text = "$driverName, você tem $pendingCount alertas pendentes"
+                            }
+                        } else {
+                            if (_binding != null && isAdded) {
+                                binding.alertCount.text = "Você tem $pendingCount alertas pendentes"
+                            }
+                        }
                     }
                 } else {
                     Toast.makeText(requireContext(), "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
@@ -177,7 +199,6 @@ class AlertsFragment : Fragment() {
         }
     }
 
-
     private fun showLoading(isLoading: Boolean) {
         if (_binding == null) return
 
@@ -190,12 +211,11 @@ class AlertsFragment : Fragment() {
         }
     }
 
-
     private fun setupRecyclerView(data: List<Alert>) {
         if (_binding == null) return
 
         val recyclerView = binding.alertRecyclerView
-        val truckId = arguments?.getInt(AlertsFragment.Companion.TRUCK_ID_KEY, 0) ?: 0
+        val truckId = arguments?.getInt(TRUCK_ID_KEY, 0) ?: 0
 
         val onDoneCallback: (Int) -> Unit = { alertId ->
             markAlertAsDone(truckId, alertId)
@@ -273,9 +293,11 @@ class AlertsFragment : Fragment() {
                         Toast.makeText(requireContext(), "Alerta marcado e Manutenção criada com sucesso!", Toast.LENGTH_LONG).show()
                         fetchAlerts(truckId)
                     } else {
-                        Toast.makeText(requireContext(),
+                        Toast.makeText(
+                            requireContext(),
                             "Alerta marcado, mas falha ao criar Manutenção: ${maintenanceResponse.code()}",
-                            Toast.LENGTH_LONG).show()
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
 
                 } else {
@@ -298,9 +320,7 @@ class AlertsFragment : Fragment() {
         layoutInflater.inflate(R.layout.dropdown, dropdownContainer, true)
 
         val dropdownHeader = dropdownContainer.getChildAt(0) as View
-
         val displayText = dropdownHeader.findViewById<TextView>(R.id.textView2)
-
         val categories = listOf("SIMPLES", "INTERMEDIÁRIO", "URGENTE")
 
         dropdownHeader.setOnClickListener {
@@ -312,10 +332,8 @@ class AlertsFragment : Fragment() {
                 val selectedCategory = item.title.toString()
                 displayText.text = selectedCategory
                 filterByCategory(selectedCategory)
-
                 true
             }
-
             popup.show()
         }
     }
