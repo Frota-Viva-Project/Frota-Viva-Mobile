@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
@@ -43,6 +44,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var toggle: ActionBarDrawerToggle
     var truckId: Int? = null
 
+    private lateinit var headerTitle: TextView
+    private lateinit var navHeaderUserName: TextView
+    private lateinit var headerSubtitle: TextView
+    private var navHeaderDate: TextView? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -58,7 +64,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val toolbar = binding.headerInclude.root
         setSupportActionBar(toolbar)
 
-        val iconNotifications = findViewById<ImageView>(R.id.icon_notifications)
+        headerTitle = toolbar.findViewById(R.id.headerTitle)
+        headerSubtitle = toolbar.findViewById(R.id.headerSubtitle)
+
+        val navHeaderView = binding.navView.getHeaderView(0)
+        navHeaderUserName = navHeaderView.findViewById(R.id.textViewUserName)
+        navHeaderDate = navHeaderView.findViewById(R.id.textViewDate)
+
+        val iconNotifications = toolbar.findViewById<ImageView>(R.id.icon_notifications)
         Log.d("DropdownDebug", "iconNotifications encontrado? ${iconNotifications != null}")
 
         iconNotifications.setOnClickListener {
@@ -81,28 +94,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         binding.navView.setNavigationItemSelectedListener(this)
 
-        val headerTitle: TextView = toolbar.findViewById(R.id.headerTitle)
-        val navHeaderView = binding.navView.getHeaderView(0)
-        val navTitle = navHeaderView?.findViewById<TextView>(R.id.textViewUserName)
-        val navSubtitle = navHeaderView?.findViewById<TextView>(R.id.textViewDate)
-        val headerSubtitle: TextView = toolbar.findViewById(R.id.headerSubtitle)
-
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user != null) {
-            val userName = user.displayName
-            if (!userName.isNullOrEmpty()) {
-                headerTitle.text = "Olá, $userName"
-                navTitle?.text = "Olá, $userName"
-            } else {
-                headerTitle.text = "Olá, Usuário"
-                navTitle?.text = "Olá, $userName"
-            }
-        }
         val currentDate = Date()
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val formattedDate = dateFormat.format(currentDate)
         headerSubtitle.text = formattedDate
-        navSubtitle?.text = formattedDate
+        navHeaderDate?.text = formattedDate
 
         val bottomNavigationView = binding.navbarInclude.bottomNavigation
 
@@ -150,21 +146,48 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 else -> false
             }
         }
+
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    binding.drawerLayout.closeDrawer(GravityCompat.START)
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
     }
 
     override fun onResume() {
         super.onResume()
 
         val token = secureStorage.getToken()
-
         if (token.isNullOrEmpty() || JwtUtils.isTokenExpired(token)) {
             redirectToLogin()
+            return
         }
+
+        val user = FirebaseAuth.getInstance().currentUser
+        val userName = user?.displayName
+        val defaultName = "Usuário"
+
+        if (!userName.isNullOrEmpty()) {
+            updateHeaderName(userName)
+        } else {
+            updateHeaderName(defaultName)
+        }
+    }
+
+    fun updateHeaderName(name: String) {
+        headerTitle.text = "Olá, $name"
+        navHeaderUserName.text = name
     }
 
     private fun redirectToLogin() {
         val intent = Intent(this, Login::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         startActivity(intent)
         finish()
@@ -263,15 +286,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         binding.drawerLayout.closeDrawer(GravityCompat.START)
         return true
-    }
-
-
-    override fun onBackPressed() {
-        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
-        } else {
-            super.onBackPressed()
-        }
     }
 
     private fun loadFragment(fragment: Fragment) {
