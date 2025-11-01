@@ -153,7 +153,7 @@ class AlertsFragment : Fragment() {
                     val alertsList = response.body()
 
                     alertsList?.let {
-                        originalAlerts = it.sortedBy { alert -> alert.id }
+                        originalAlerts = it.sortedByDescending { alert -> alert.id }
                         setupRecyclerView(originalAlerts)
 
                         val pendingCount = originalAlerts.count { alert ->
