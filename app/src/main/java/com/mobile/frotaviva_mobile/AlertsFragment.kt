@@ -16,7 +16,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.mobile.frotaviva_mobile.adapter.AlertAdapter
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.auth.JwtUtils
@@ -25,14 +24,12 @@ import com.mobile.frotaviva_mobile.model.Alert
 import com.mobile.frotaviva_mobile.model.MaintenanceRequest
 import com.mobile.frotaviva_mobile.storage.SecureStorage
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.util.Locale
 
 class AlertsFragment : Fragment() {
 
     companion object {
         const val RELOAD_KEY = "RELOAD_MAINTENANCES"
-        const val TRUCK_ID_KEY = "truckId"
     }
 
     private var _binding: FragmentAlertsBinding? = null
@@ -49,7 +46,7 @@ class AlertsFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             val shouldReload = result.data?.getBooleanExtra(RELOAD_KEY, false) ?: false
             if (shouldReload) {
-                fetchTruckIdAndLoadData()
+                fetchAlerts()
                 Toast.makeText(requireContext(), "Lista de alertas atualizada.", Toast.LENGTH_SHORT).show()
             }
         }
@@ -64,9 +61,14 @@ class AlertsFragment : Fragment() {
         val userName = FirebaseAuth.getInstance().currentUser?.displayName ?: "Motorista"
 
         binding.buttonAddAlert.setOnClickListener {
-            val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0) ?: 0
+            val truckId = secureStorage.getTruckId()
+            if (truckId == null || truckId <= 0) {
+                Toast.makeText(requireContext(), "ID do caminhão não encontrado.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             val intent = Intent(requireContext(), InsertAlert::class.java).apply {
-                putExtra(TRUCK_ID_KEY, truckIdFromBundle)
+                putExtra(InsertAlert.TRUCK_ID_KEY, truckId)
             }
             insertAlertLauncher.launch(intent)
         }
@@ -88,7 +90,7 @@ class AlertsFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         if (isUserAuthenticated()) {
-            fetchTruckIdAndLoadData()
+            fetchAlerts()
         } else {
             redirectToLogin()
         }
@@ -110,73 +112,48 @@ class AlertsFragment : Fragment() {
         requireActivity().finish()
     }
 
-    private fun fetchTruckIdAndLoadData() {
-        val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
-        if (truckIdFromBundle != null && truckIdFromBundle > 0) {
-            fetchAlerts(truckIdFromBundle)
+    private fun fetchAlerts() {
+        val truckId = secureStorage.getTruckId()
+
+        if (truckId == null || truckId <= 0) {
+            Toast.makeText(requireContext(), "ID do caminhão não encontrado.", Toast.LENGTH_LONG).show()
+            setupRecyclerView(emptyList())
             return
         }
 
-        val user = auth.currentUser ?: run {
-            redirectToLogin()
-            return
-        }
-
-        val db = FirebaseFirestore.getInstance()
-        showLoading(true)
-
-        lifecycleScope.launch {
-            try {
-                val snapshot = db.collection("driver").document(user.uid).get().await()
-                if (!isAdded) return@launch
-
-                if (snapshot.exists()) {
-                    val truckId = snapshot.getLong("truckId")?.toInt() ?: 0
-                    if (truckId > 0) {
-                        fetchAlerts(truckId)
-                    } else {
-                        Toast.makeText(requireContext(), "ID do caminhão não encontrado.", Toast.LENGTH_LONG).show()
-                        setupRecyclerView(emptyList())
-                        showLoading(false)
-                    }
-                } else {
-                    Toast.makeText(requireContext(), "Motorista não encontrado.", Toast.LENGTH_LONG).show()
-                    setupRecyclerView(emptyList())
-                    showLoading(false)
-                }
-            } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
-                setupRecyclerView(emptyList())
-                showLoading(false)
-            }
-        }
-    }
-
-    private fun fetchAlerts(truckId: Int) {
         showLoading(true)
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.getAlerts(truckId)
                 if (!isAdded) return@launch
 
-                if (response.isSuccessful) {
-                    val alertsList = response.body() ?: emptyList()
-                    originalAlerts = alertsList.sortedByDescending { it.id }
-                    setupRecyclerView(originalAlerts)
+                when {
+                    response.isSuccessful -> {
+                        val alertsList = response.body() ?: emptyList()
+                        if (alertsList.isEmpty()) {
+                            Toast.makeText(requireContext(), "Nenhum alerta disponível para este caminhão.", Toast.LENGTH_LONG).show()
+                            setupRecyclerView(emptyList())
+                        } else {
+                            originalAlerts = alertsList.sortedByDescending { it.id }
+                            setupRecyclerView(originalAlerts)
 
-                    val pendingCount = originalAlerts.count { it.status.equals("PENDENTE", ignoreCase = true) }
-                    val driverName = FirebaseAuth.getInstance().currentUser?.let { user ->
-                        val snapshot = FirebaseFirestore.getInstance().collection("driver").document(user.uid).get().await()
-                        snapshot.getString("name") ?: "Motorista"
-                    } ?: "Motorista"
+                            val pendingCount = originalAlerts.count { it.status.equals("PENDENTE", ignoreCase = true) }
+                            val driverName = FirebaseAuth.getInstance().currentUser?.displayName ?: "Motorista"
 
-                    binding.alertCount.text = if (pendingCount == 1)
-                        "$driverName, você tem $pendingCount alerta pendente"
-                    else
-                        "$driverName, você tem $pendingCount alertas pendentes"
-                } else {
-                    Toast.makeText(requireContext(), "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
-                    setupRecyclerView(emptyList())
+                            binding.alertCount.text = if (pendingCount == 1)
+                                "$driverName, você tem $pendingCount alerta pendente"
+                            else
+                                "$driverName, você tem $pendingCount alertas pendentes"
+                        }
+                    }
+                    response.code() == 404 -> {
+                        Toast.makeText(requireContext(), "Nenhum alerta encontrado", Toast.LENGTH_LONG).show()
+                        setupRecyclerView(emptyList())
+                    }
+                    else -> {
+                        Toast.makeText(requireContext(), "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
+                        setupRecyclerView(emptyList())
+                    }
                 }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
@@ -194,7 +171,7 @@ class AlertsFragment : Fragment() {
 
     private fun setupRecyclerView(data: List<Alert>) {
         val recyclerView = binding.alertRecyclerView
-        val truckId = arguments?.getInt(TRUCK_ID_KEY, 0) ?: 0
+        val truckId = secureStorage.getTruckId() ?: 0
 
         val onDoneCallback: (Int) -> Unit = { alertId -> markAlertAsDone(truckId, alertId) }
         val onSendToMaintenanceCallback: (Int, String, String) -> Unit =
@@ -227,7 +204,7 @@ class AlertsFragment : Fragment() {
 
                 if (response.isSuccessful) {
                     Toast.makeText(requireContext(), "Alerta finalizado com sucesso!", Toast.LENGTH_SHORT).show()
-                    fetchAlerts(truckId)
+                    fetchAlerts()
                 } else {
                     Toast.makeText(requireContext(), "Falha ao finalizar alerta: ${response.code()}", Toast.LENGTH_LONG).show()
                 }
@@ -257,7 +234,7 @@ class AlertsFragment : Fragment() {
 
                     if (maintenanceResponse.isSuccessful) {
                         Toast.makeText(requireContext(), "Alerta marcado e Manutenção criada com sucesso!", Toast.LENGTH_LONG).show()
-                        fetchAlerts(truckId)
+                        fetchAlerts()
                     } else {
                         Toast.makeText(requireContext(), "Alerta marcado, mas falha ao criar Manutenção: ${maintenanceResponse.code()}", Toast.LENGTH_LONG).show()
                     }
@@ -279,7 +256,6 @@ class AlertsFragment : Fragment() {
         val displayText = dropdownHeader.findViewById<TextView>(R.id.textView2)
         val categories = listOf("SIMPLES", "INTERMEDIÁRIO", "URGENTE")
 
-        // Inicializa com "Selecionar"
         displayText.text = "Selecionar"
         displayText.setTextColor(resources.getColor(R.color.primary_default, null))
 

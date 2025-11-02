@@ -2,9 +2,12 @@ package com.mobile.frotaviva_mobile
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -28,6 +31,10 @@ class Login : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        window.statusBarColor = ContextCompat.getColor(this, R.color.primary_default)
+        ViewCompat.getWindowInsetsController(window.decorView)
+            ?.isAppearanceLightStatusBars = false
 
         firebaseManager = FirebaseManager()
         FirebaseApp.initializeApp(this)
@@ -96,7 +103,20 @@ class Login : AppCompatActivity() {
 
                     secureStorage.saveToken(yourJwt)
 
-                    redirectToMain()
+                    firebaseManager.getUserTruckId(
+                        onSuccess = { truckId ->
+                            if (truckId != null && truckId > 0) {
+                                secureStorage.saveTruckId(truckId)
+                                Log.d("LoginDebug", "Truck ID salvo com sucesso: $truckId")
+                                redirectToMain()
+                            } else {
+                                Toast.makeText(this@Login, "Truck ID não encontrado.", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onFailure = {
+                            Toast.makeText(this@Login, "Erro ao buscar Truck ID.", Toast.LENGTH_SHORT).show()
+                        }
+                    )
                 } else {
                     Toast.makeText(this@Login, "Falha de autorização no servidor.", Toast.LENGTH_LONG).show()
                 }

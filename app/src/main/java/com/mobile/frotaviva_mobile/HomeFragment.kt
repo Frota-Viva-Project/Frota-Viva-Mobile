@@ -2,8 +2,10 @@ package com.mobile.frotaviva_mobile
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.location.Geocoder
@@ -20,6 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
@@ -68,6 +71,19 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
+    private val notificationReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val title = intent?.getStringExtra("title") ?: return
+            val body = intent.getStringExtra("body") ?: ""
+            val newNotif = Notification(title = title, body = body)
+            if (::notificationAdapter.isInitialized) {
+                requireActivity().runOnUiThread {
+                    notificationAdapter.addNotification(newNotif)
+                }
+            }
+        }
+    }
+
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -94,7 +110,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
         binding.updateButton.setOnClickListener { getLastKnownLocationAndUpdateUI() }
         binding.buttonSeeMore.setOnClickListener {
-            val truckId = (activity as? MainActivity)?.truckId
+            val truckId = secureStorage.getTruckId()
+            Log.d("HomeDebug", "Truck ID recuperado: $truckId")
             if (truckId != null && truckId > 0) openAllRoutesModal(truckId)
             else Toast.makeText(requireContext(), "Aguarde, carregando ID do caminhão...", Toast.LENGTH_SHORT).show()
         }
@@ -103,6 +120,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
     override fun onResume() {
         super.onResume()
+        LocalBroadcastManager.getInstance(requireContext())
+            .registerReceiver(notificationReceiver, IntentFilter("NEW_NOTIFICATION"))
         if (isUserAuthenticated()) {
             loadInitialData()
         } else {
@@ -110,6 +129,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(notificationReceiver)
+    }
     private fun isUserAuthenticated(): Boolean {
         val token = secureStorage.getToken()
         if (!token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token)) return true
@@ -328,13 +351,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
     private fun fetchDriverAndTruckDetails(uid: String) {
         showLoading(true)
-        val sharedPref = requireActivity().getSharedPreferences("truck_prefs", Context.MODE_PRIVATE)
 
         db.collection("driver").document(uid)
             .get()
             .addOnSuccessListener { document ->
                 if (!isAdded) return@addOnSuccessListener
                 showLoading(false)
+
                 if (document.exists()) {
                     val name = document.getString("name") ?: getString(R.string.data_not_found)
                     val carModel = document.getString("carModel") ?: getString(R.string.data_not_found)
@@ -343,17 +366,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                     val idMapsFromFirestore = document.getLong("idMaps")?.toInt()
 
                     if (truckId != null && truckId > 0 && idMapsFromFirestore != null && idMapsFromFirestore > 0) {
+                        secureStorage.saveTruckId(truckId)
+
                         (activity as? MainActivity)?.truckId = truckId
-                        with(sharedPref.edit()) {
-                            putInt("TRUCK_ID", truckId)
-                            putInt("ID_MAPS", idMapsFromFirestore)
-                            apply()
-                        }
+
                         startLocationTrackingWorker()
                         fetchRoutes(truckId)
                         fetchMeters(truckId)
                         fetchNotifications(truckId)
                     }
+
                     updateDriverDetailsDisplay(name, carModel, carPlate)
                 } else {
                     updateDriverDetailsDisplay(
@@ -374,6 +396,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                 Log.e("HomeFragment", "Failed to fetch driver details", exception)
             }
     }
+
 
     @SuppressLint("MissingPermission")
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])

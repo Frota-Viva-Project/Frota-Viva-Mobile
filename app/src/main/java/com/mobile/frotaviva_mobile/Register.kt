@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import com.mobile.frotaviva_mobile.databinding.ActivityRegisterBinding
 
 class Register : AppCompatActivity() {
@@ -13,6 +15,10 @@ class Register : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        window.statusBarColor = ContextCompat.getColor(this, R.color.primary_default)
+        ViewCompat.getWindowInsetsController(window.decorView)
+            ?.isAppearanceLightStatusBars = false
 
         binding.buttonContinueRegister.setOnClickListener {
             if (!validateInputs()) {

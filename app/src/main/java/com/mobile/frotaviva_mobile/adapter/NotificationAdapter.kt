@@ -5,7 +5,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.mobile.frotaviva_mobile.databinding.NotificationItemBinding
 import com.mobile.frotaviva_mobile.model.Notification
-import okhttp3.internal.notify
 
 class NotificationAdapter (private var items: List<Notification>)
     : RecyclerView.Adapter<NotificationAdapter.NotificationViewHolder>() {
@@ -28,6 +27,11 @@ class NotificationAdapter (private var items: List<Notification>)
 
     override fun getItemCount(): Int {
         return items.size
+    }
+
+    fun addNotification(notification: Notification) {
+        items = listOf(notification) + items // adiciona no topo
+        notifyItemInserted(0)
     }
 
     fun updateData(newItens: List<Notification>) {

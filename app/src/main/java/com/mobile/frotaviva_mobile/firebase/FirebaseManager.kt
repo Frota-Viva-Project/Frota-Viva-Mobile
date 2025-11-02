@@ -3,6 +3,7 @@ package com.mobile.frotaviva_mobile.firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.firestore.FirebaseFirestore
 
 
 class FirebaseManager {
@@ -19,6 +20,24 @@ class FirebaseManager {
                     task.exception?.let { onFailure(it) }
                 }
             }
+    }
+
+    fun getUserTruckId(onSuccess: (Int?) -> Unit, onFailure: () -> Unit) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            val db = FirebaseFirestore.getInstance()
+            db.collection("driver").document(user.uid)
+                .get()
+                .addOnSuccessListener { doc ->
+                    val truckId = doc.getLong("truckId")?.toInt()
+                    onSuccess(truckId)
+                }
+                .addOnFailureListener { _ ->
+                    onFailure()
+                }
+        } else {
+            onFailure()
+        }
     }
 
     fun updateUserProfile(displayName: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {

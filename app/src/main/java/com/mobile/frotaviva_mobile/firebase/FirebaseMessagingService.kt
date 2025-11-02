@@ -3,10 +3,12 @@ package com.mobile.frotaviva_mobile
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -37,6 +39,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
             val body = remoteMessage.data["body"] ?: remoteMessage.notification?.body ?: "Verifique o aplicativo para detalhes."
 
             showNotification(title, body)
+            sendNotificationToApp(title, body)
         }
     }
 
@@ -60,6 +63,13 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 Log.e(TAG, "Erro HTTP ao registrar token: ${e.message}")
             }
         }
+    }
+
+    private fun sendNotificationToApp(title: String, body: String) {
+        val intent = Intent("NEW_NOTIFICATION")
+        intent.putExtra("title", title)
+        intent.putExtra("body", body)
+        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
     }
 
     private fun showNotification(title: String, body: String) {
