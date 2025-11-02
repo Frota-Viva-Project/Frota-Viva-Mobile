@@ -12,14 +12,16 @@ import androidx.lifecycle.lifecycleScope
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.mobile.frotaviva_mobile.api.RetrofitClient
+import com.mobile.frotaviva_mobile.auth.JwtUtils
+import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 import com.mobile.frotaviva_mobile.databinding.ActivityLoginBinding
 import com.mobile.frotaviva_mobile.firebase.FirebaseManager
 import com.mobile.frotaviva_mobile.storage.SecureStorage
 import kotlinx.coroutines.launch
-import com.google.firebase.auth.FirebaseUser
-import com.mobile.frotaviva_mobile.auth.JwtUtils
-import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 
 class Login : AppCompatActivity() {
     private lateinit var firebaseManager: FirebaseManager
@@ -41,7 +43,6 @@ class Login : AppCompatActivity() {
         secureStorage = SecureStorage(this)
 
         RetrofitClient.initialize(applicationContext)
-
         checkPersistentLogin()
 
         binding.navigateToRegister.setOnClickListener {
@@ -61,8 +62,6 @@ class Login : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {super.onResume()}
-
     private fun loginUser(email: String, password: String) {
         firebaseManager.loginUser(email, password,
             onSuccess = { firebaseUser ->
@@ -79,7 +78,7 @@ class Login : AppCompatActivity() {
             .addOnSuccessListener { result ->
                 val firebaseIdToken = result.token
                 if (firebaseIdToken != null) {
-                    exchangeTokenWithBackend(firebaseIdToken)
+                    exchangeTokenWithBackend(firebaseIdToken, firebaseUser.uid)
                 } else {
                     handleLoginError(null)
                 }
@@ -89,34 +88,40 @@ class Login : AppCompatActivity() {
             }
     }
 
-    private fun exchangeTokenWithBackend(firebaseIdToken: String) {
+    private fun exchangeTokenWithBackend(firebaseIdToken: String, uid: String) {
         lifecycleScope.launch {
             try {
                 val authService = RetrofitClient.instance
-
                 val request = TokenExchangeRequest(firebaseIdToken = firebaseIdToken)
-
                 val response = authService.exchangeFirebaseToken(request)
 
                 if (response.isSuccessful && response.body() != null) {
                     val yourJwt = response.body()!!.token
-
                     secureStorage.saveToken(yourJwt)
 
-                    firebaseManager.getUserTruckId(
-                        onSuccess = { truckId ->
-                            if (truckId != null && truckId > 0) {
-                                secureStorage.saveTruckId(truckId)
-                                Log.d("LoginDebug", "Truck ID salvo com sucesso: $truckId")
-                                redirectToMain()
+                    // Agora buscamos truckId e userId diretamente do Firestore
+                    Firebase.firestore.collection("driver").document(uid)
+                        .get()
+                        .addOnSuccessListener { document ->
+                            if (document != null && document.exists()) {
+                                val truckId = (document.getLong("truckId") ?: 0).toInt()
+                                val userId = (document.getLong("userId") ?: 0).toInt()
+
+                                if (truckId > 0 && userId > 0) {
+                                    secureStorage.saveTruckId(truckId)
+                                    secureStorage.saveUserId(userId)
+                                    Log.d("LoginDebug", "Truck ID: $truckId, User ID: $userId salvos.")
+                                    redirectToMain()
+                                } else {
+                                    Toast.makeText(this@Login, "Truck ID ou User ID não encontrado.", Toast.LENGTH_SHORT).show()
+                                }
                             } else {
-                                Toast.makeText(this@Login, "Truck ID não encontrado.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@Login, "Documento do usuário não encontrado.", Toast.LENGTH_SHORT).show()
                             }
-                        },
-                        onFailure = {
-                            Toast.makeText(this@Login, "Erro ao buscar Truck ID.", Toast.LENGTH_SHORT).show()
                         }
-                    )
+                        .addOnFailureListener {
+                            Toast.makeText(this@Login, "Erro ao buscar dados do usuário.", Toast.LENGTH_SHORT).show()
+                        }
                 } else {
                     Toast.makeText(this@Login, "Falha de autorização no servidor.", Toast.LENGTH_LONG).show()
                 }

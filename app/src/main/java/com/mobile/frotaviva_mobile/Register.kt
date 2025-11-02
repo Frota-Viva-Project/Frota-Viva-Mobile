@@ -43,7 +43,9 @@ class Register : AppCompatActivity() {
                     editTextEmailRegister.text.isNotBlank() &&
                     editTextPhone.text.isNotBlank() &&
                     editTextCarPlate.text.isNotBlank() &&
-                    editTextEnterpriseCode.text.isNotBlank()
+                    editTextEnterpriseCode.text.isNotBlank() &&
+                    editTextCarModel.text.isNotBlank() &&
+                    editTextTruckCapacity.text.isNotBlank()
         }
     }
 
@@ -56,6 +58,8 @@ class Register : AppCompatActivity() {
             putString("phone", binding.editTextPhone.text.toString().trim())
             putString("car_plate", binding.editTextCarPlate.text.toString().trim())
             putString("enterprise_code", binding.editTextEnterpriseCode.text.toString().trim())
+            putString("car_model", binding.editTextCarModel.text.toString().trim())
+            putInt("capacity", binding.editTextTruckCapacity.text.toString().toInt())
         }
 
         intent.putExtras(bundle)
