@@ -4,20 +4,18 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.PopupMenu
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.mobile.frotaviva_mobile.api.RetrofitClient
 import com.mobile.frotaviva_mobile.databinding.ActivityInsertAlertBinding
 import com.mobile.frotaviva_mobile.model.AlertRequest
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
-class InsertAlert : AppCompatActivity(), CoroutineScope{
+class InsertAlert : AppCompatActivity(), CoroutineScope {
     private lateinit var binding: ActivityInsertAlertBinding
 
     override val coroutineContext: CoroutineContext = Dispatchers.Main + Job()
@@ -41,17 +39,61 @@ class InsertAlert : AppCompatActivity(), CoroutineScope{
             val categoria = binding.categoryAlertInput.text.toString()
 
             if (titulo.isEmpty() || descricao.isEmpty() || categoria.isEmpty()) {
-                Toast.makeText(this, "Preencha título e descrição.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Preencha título, descrição e categoria.", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
             val alert = AlertRequest(
                 titulo = titulo,
                 descricao = descricao,
-                categoria = categoria,
+                categoria = categoria
             )
 
             sendAlertToBackend(alert)
+        }
+
+        setupDropdown()
+    }
+
+    private fun setupDropdown() {
+        val dropdownContainer = binding.dropdownContainer
+
+        // Limpa qualquer view existente
+        dropdownContainer.removeAllViews()
+
+        // Cria dinamicamente o TextView que vai funcionar como header
+        val dropdownHeader = TextView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            text = "Selecione a categoria"
+            setPadding(16, 16, 16, 16)
+            setBackgroundResource(R.drawable.rounded_edittext_background)
+            textSize = 16f
+            setTextColor(resources.getColor(R.color.primary_default, null))
+            isClickable = true
+            isFocusable = true
+        }
+
+        dropdownContainer.addView(dropdownHeader)
+
+        val categories = listOf("Simples", "Intermediário", "Urgente")
+
+        dropdownHeader.setOnClickListener {
+            val popup = PopupMenu(this, dropdownHeader)
+            categories.forEachIndexed { index, category ->
+                popup.menu.add(0, index, index, category)
+            }
+
+            popup.setOnMenuItemClickListener { item ->
+                val selectedCategory = item.title.toString()
+                dropdownHeader.text = selectedCategory
+                binding.categoryAlertInput.setText(selectedCategory) // coloca no EditText invisível ou escondido
+                true
+            }
+
+            popup.show()
         }
     }
 
@@ -70,7 +112,7 @@ class InsertAlert : AppCompatActivity(), CoroutineScope{
                         putExtra(AlertsFragment.RELOAD_KEY, true)
                     }
                     setResult(Activity.RESULT_OK, resultIntent)
-                    Toast.makeText(this@InsertAlert, "Aviso enviada com sucesso!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@InsertAlert, "Aviso enviado com sucesso!", Toast.LENGTH_LONG).show()
                     finish()
                 } else {
                     val errorBody = response.errorBody()?.string() ?: "Erro desconhecido"

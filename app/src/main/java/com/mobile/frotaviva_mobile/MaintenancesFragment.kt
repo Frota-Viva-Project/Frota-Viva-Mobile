@@ -198,8 +198,9 @@ class MaintenancesFragment : Fragment() {
                     val maintenancesList = response.body()
 
                     maintenancesList?.let {
-                        originalData = it
-                        setupRecyclerView(it)
+                        originalData = it.sortedByDescending { maintenance -> maintenance.id }
+                        setupRecyclerView(originalData)
+
                     } ?: run {
                         setupRecyclerView(emptyList())
                         Toast.makeText(requireContext(), "Nenhuma manutenção encontrada.", Toast.LENGTH_SHORT).show()

@@ -47,9 +47,7 @@ class AlertsFragment : Fragment() {
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val data = result.data
-            val shouldReload = data?.getBooleanExtra(RELOAD_KEY, false) ?: false
-
+            val shouldReload = result.data?.getBooleanExtra(RELOAD_KEY, false) ?: false
             if (shouldReload) {
                 fetchTruckIdAndLoadData()
                 Toast.makeText(requireContext(), "Lista de alertas atualizada.", Toast.LENGTH_SHORT).show()
@@ -62,13 +60,18 @@ class AlertsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentAlertsBinding.inflate(inflater, container, false)
+
+        val userName = FirebaseAuth.getInstance().currentUser?.displayName ?: "Motorista"
+
         binding.buttonAddAlert.setOnClickListener {
-            val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
+            val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0) ?: 0
             val intent = Intent(requireContext(), InsertAlert::class.java).apply {
                 putExtra(TRUCK_ID_KEY, truckIdFromBundle)
             }
             insertAlertLauncher.launch(intent)
         }
+
+        binding.alertCount.text = "$userName, carregando alertas..."
         return binding.root
     }
 
@@ -93,20 +96,13 @@ class AlertsFragment : Fragment() {
 
     private fun isUserAuthenticated(): Boolean {
         val token = secureStorage.getToken()
-
-        if (!token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token)) {
-            return true
-        }
-
-        return auth.currentUser != null
+        return !token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token) || auth.currentUser != null
     }
 
     private fun redirectToLogin() {
         Toast.makeText(requireContext(), "Sessão expirada. Faça login novamente.", Toast.LENGTH_LONG).show()
-
         secureStorage.clearToken()
         auth.signOut()
-
         val intent = Intent(requireContext(), Login::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -116,32 +112,26 @@ class AlertsFragment : Fragment() {
 
     private fun fetchTruckIdAndLoadData() {
         val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
-
         if (truckIdFromBundle != null && truckIdFromBundle > 0) {
             fetchAlerts(truckIdFromBundle)
             return
         }
 
-        val user = auth.currentUser
-        val db = FirebaseFirestore.getInstance()
-
-        if (user == null) {
+        val user = auth.currentUser ?: run {
             redirectToLogin()
             return
         }
 
-        val userId = user.uid
+        val db = FirebaseFirestore.getInstance()
         showLoading(true)
 
         lifecycleScope.launch {
             try {
-                val snapshot = db.collection("driver").document(userId).get().await()
-
+                val snapshot = db.collection("driver").document(user.uid).get().await()
                 if (!isAdded) return@launch
 
                 if (snapshot.exists()) {
                     val truckId = snapshot.getLong("truckId")?.toInt() ?: 0
-
                     if (truckId > 0) {
                         fetchAlerts(truckId)
                     } else {
@@ -155,77 +145,60 @@ class AlertsFragment : Fragment() {
                     showLoading(false)
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-                if (_binding != null) {
-                    setupRecyclerView(emptyList())
-                    showLoading(false)
-                }
+                Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
+                setupRecyclerView(emptyList())
+                showLoading(false)
             }
         }
     }
 
     private fun fetchAlerts(truckId: Int) {
         showLoading(true)
-
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.getAlerts(truckId)
-
                 if (!isAdded) return@launch
 
                 if (response.isSuccessful) {
-                    val alertsList = response.body()
-                    alertsList?.let {
-                        originalAlerts = it.sortedByDescending { alert -> alert.id }
-                        setupRecyclerView(originalAlerts)
-                    }
+                    val alertsList = response.body() ?: emptyList()
+                    originalAlerts = alertsList.sortedByDescending { it.id }
+                    setupRecyclerView(originalAlerts)
+
+                    val pendingCount = originalAlerts.count { it.status.equals("PENDENTE", ignoreCase = true) }
+                    val driverName = FirebaseAuth.getInstance().currentUser?.let { user ->
+                        val snapshot = FirebaseFirestore.getInstance().collection("driver").document(user.uid).get().await()
+                        snapshot.getString("name") ?: "Motorista"
+                    } ?: "Motorista"
+
+                    binding.alertCount.text = if (pendingCount == 1)
+                        "$driverName, você tem $pendingCount alerta pendente"
+                    else
+                        "$driverName, você tem $pendingCount alertas pendentes"
                 } else {
                     Toast.makeText(requireContext(), "Erro ao carregar alertas: ${response.code()}", Toast.LENGTH_LONG).show()
                     setupRecyclerView(emptyList())
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-                if (_binding != null) {
-                    setupRecyclerView(emptyList())
-                }
+                Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
+                setupRecyclerView(emptyList())
             } finally {
-                if (_binding != null) {
-                    showLoading(false)
-                }
+                showLoading(false)
             }
         }
     }
 
     private fun showLoading(isLoading: Boolean) {
-        if (_binding == null) return
-
-        if (isLoading) {
-            binding.progressBar.visibility = View.VISIBLE
-            binding.alertRecyclerView.visibility = View.GONE
-        } else {
-            binding.progressBar.visibility = View.GONE
-            binding.alertRecyclerView.visibility = View.VISIBLE
-        }
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.alertRecyclerView.visibility = if (isLoading) View.GONE else View.VISIBLE
     }
 
     private fun setupRecyclerView(data: List<Alert>) {
-        if (_binding == null) return
-
         val recyclerView = binding.alertRecyclerView
         val truckId = arguments?.getInt(TRUCK_ID_KEY, 0) ?: 0
 
-        val onDoneCallback: (Int) -> Unit = { alertId ->
-            markAlertAsDone(truckId, alertId)
-        }
-
+        val onDoneCallback: (Int) -> Unit = { alertId -> markAlertAsDone(truckId, alertId) }
         val onSendToMaintenanceCallback: (Int, String, String) -> Unit =
-            { alertId, alertTitle, alertDetails ->
-                sendAlertToMaintenance(truckId, alertId, alertTitle, alertDetails)
-            }
+            { alertId, alertTitle, alertDetails -> sendAlertToMaintenance(truckId, alertId, alertTitle, alertDetails) }
 
         if (recyclerView.adapter == null) {
             alertAdapter = AlertAdapter(
@@ -233,7 +206,6 @@ class AlertsFragment : Fragment() {
                 onAlertDone = onDoneCallback,
                 onSendToMaintenance = onSendToMaintenanceCallback
             )
-
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.addItemDecoration(VerticalSpaceItemDecoration(dpToPx(24)))
             recyclerView.adapter = alertAdapter
@@ -251,7 +223,6 @@ class AlertsFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.markAlertAsDone(truckId, alertId)
-
                 if (!isAdded) return@launch
 
                 if (response.isSuccessful) {
@@ -261,9 +232,7 @@ class AlertsFragment : Fragment() {
                     Toast.makeText(requireContext(), "Falha ao finalizar alerta: ${response.code()}", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão ao finalizar alerta: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                Toast.makeText(requireContext(), "Erro de conexão ao finalizar alerta: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -277,7 +246,6 @@ class AlertsFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 val markResponse = RetrofitClient.instance.markAlertForMaintenance(truckId, alertId)
-
                 if (!isAdded) return@launch
 
                 if (markResponse.isSuccessful) {
@@ -285,32 +253,25 @@ class AlertsFragment : Fragment() {
                         titulo = "Manutenção (Alerta ID $alertId): $alertTitle",
                         info = alertDetails,
                     )
-
                     val maintenanceResponse = RetrofitClient.instance.sendMaintenance(truckId, maintenanceRequest)
 
                     if (maintenanceResponse.isSuccessful) {
                         Toast.makeText(requireContext(), "Alerta marcado e Manutenção criada com sucesso!", Toast.LENGTH_LONG).show()
                         fetchAlerts(truckId)
                     } else {
-                        Toast.makeText(requireContext(),
-                            "Alerta marcado, mas falha ao criar Manutenção: ${maintenanceResponse.code()}",
-                            Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireContext(), "Alerta marcado, mas falha ao criar Manutenção: ${maintenanceResponse.code()}", Toast.LENGTH_LONG).show()
                     }
                 } else {
                     Toast.makeText(requireContext(), "Falha ao enviar pra manutenção: ${markResponse.code()}", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão/API ao processar manutenção: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                Toast.makeText(requireContext(), "Erro de conexão/API ao processar manutenção: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     private fun setupDropdown() {
-        if (_binding == null) return
         val dropdownContainer = binding.dropdownContainer
-
         dropdownContainer.removeAllViews()
         layoutInflater.inflate(R.layout.dropdown, dropdownContainer, true)
 
@@ -318,11 +279,16 @@ class AlertsFragment : Fragment() {
         val displayText = dropdownHeader.findViewById<TextView>(R.id.textView2)
         val categories = listOf("SIMPLES", "INTERMEDIÁRIO", "URGENTE")
 
+        // Inicializa com "Selecionar"
+        displayText.text = "Selecionar"
+        displayText.setTextColor(resources.getColor(R.color.primary_default, null))
+
         dropdownHeader.setOnClickListener {
             val popup = PopupMenu(requireContext(), dropdownHeader)
             categories.forEachIndexed { index, category ->
                 popup.menu.add(0, index, index, category)
             }
+
             popup.setOnMenuItemClickListener { item ->
                 val selectedCategory = item.title.toString()
                 displayText.text = selectedCategory
@@ -345,7 +311,9 @@ class AlertsFragment : Fragment() {
                 alert.categoria.lowercase(Locale.getDefault()).contains(query)
             }
         }
+
         alertAdapter.updateData(filteredList)
+
         if (filteredList.isEmpty()) {
             Toast.makeText(requireContext(), "Nenhum alerta encontrado na categoria '$category'.", Toast.LENGTH_SHORT).show()
         }

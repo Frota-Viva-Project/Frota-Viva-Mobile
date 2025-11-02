@@ -1,6 +1,5 @@
 package com.mobile.frotaviva_mobile
 
-import VerticalSpaceItemDecoration
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -51,6 +50,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteUpdateListener {
+
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val db = FirebaseFirestore.getInstance()
@@ -72,22 +72,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         when {
-            permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
-                setupMapAndLocation()
-            }
-            permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
-                setupMapAndLocation()
-            }
-            else -> {
-                Toast.makeText(requireContext(), getString(R.string.permission_denied), Toast.LENGTH_LONG).show()
-            }
+            permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> setupMapAndLocation()
+            permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> setupMapAndLocation()
+            else -> Toast.makeText(requireContext(), getString(R.string.permission_denied), Toast.LENGTH_LONG).show()
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -98,27 +89,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
         auth = FirebaseAuth.getInstance()
         secureStorage = SecureStorage(requireContext())
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
-
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync(this)
 
-        binding.updateButton.setOnClickListener {
-            getLastKnownLocationAndUpdateUI()
-        }
-
+        binding.updateButton.setOnClickListener { getLastKnownLocationAndUpdateUI() }
         binding.buttonSeeMore.setOnClickListener {
             val truckId = (activity as? MainActivity)?.truckId
-
-            if (truckId != null && truckId > 0) {
-                openAllRoutesModal(truckId)
-            } else {
-                Toast.makeText(requireContext(), "Aguarde, carregando ID do caminhão...", Toast.LENGTH_SHORT).show()
-            }
+            if (truckId != null && truckId > 0) openAllRoutesModal(truckId)
+            else Toast.makeText(requireContext(), "Aguarde, carregando ID do caminhão...", Toast.LENGTH_SHORT).show()
         }
-
-        binding.mapClickOverlay.setOnClickListener {
-            openFullScreenMap()
-        }
+        binding.mapClickOverlay.setOnClickListener { openFullScreenMap() }
     }
 
     override fun onResume() {
@@ -132,20 +112,14 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
     private fun isUserAuthenticated(): Boolean {
         val token = secureStorage.getToken()
-
-        if (!token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token)) {
-            return true
-        }
-
+        if (!token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token)) return true
         return auth.currentUser != null
     }
 
     private fun redirectToLogin() {
         Toast.makeText(requireContext(), "Sessão expirada. Faça login novamente.", Toast.LENGTH_LONG).show()
-
         secureStorage.clearToken()
         auth.signOut()
-
         val intent = Intent(requireContext(), Login::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -168,7 +142,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
     private fun showLoading(isLoading: Boolean) {
         if (_binding == null) return
-
         binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.mapClickOverlay.visibility = if (isLoading) View.GONE else View.VISIBLE
         binding.routeDeparture.visibility = if (isLoading) View.GONE else View.VISIBLE
@@ -189,9 +162,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.getRoutes(truckId)
-
                 if (!isAdded) return@launch
-
                 if (response.isSuccessful) {
                     val activeRoute = response.body()?.firstOrNull { it.status == "EM ROTA" }
                     onRoutesFetched(activeRoute)
@@ -203,21 +174,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
     }
 
     private fun fetchMeters(truckId: Int) {
+        showLoading(true)
+        updateMetersDisplay(0, 0, 0)
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.getMeters(truckId)
-
                 if (!isAdded) return@launch
-
                 if (response.isSuccessful) {
                     val meterData = response.body()
-
                     if (meterData != null) {
-                        updateMetersDisplay(
-                            meterData.nivelCombustivel,
-                            meterData.cargaMotor,
-                            meterData.velocidadeVeiculo.toInt()
-                        )
+                        updateMetersDisplay(meterData.nivelCombustivel, meterData.cargaMotor, meterData.velocidadeVeiculo.toInt())
                     } else {
                         updateMetersDisplay(0, 0, 0)
                         Toast.makeText(requireContext(), "Dados dos medidores não retornaram", Toast.LENGTH_SHORT).show()
@@ -227,51 +193,38 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                     updateMetersDisplay(0, 0, 0)
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Log.e("API_CATCH", "Erro de conexão/API: ${e.message}", e)
-                    Toast.makeText(requireContext(), "Erro de conexão/API", Toast.LENGTH_LONG).show()
-                }
+                Log.e("API_CATCH", "Erro de conexão/API: ${e.message}", e)
+                Toast.makeText(requireContext(), "Erro de conexão/API", Toast.LENGTH_LONG).show()
                 updateMetersDisplay(0, 0, 0)
+            } finally {
+                if (_binding != null) showLoading(false)
             }
         }
     }
 
     private fun fetchNotifications(userId: Int) {
         showLoading(true)
-
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.getNotificationHistory(userId)
-
                 if (!isAdded) return@launch
-
                 if (response.isSuccessful) {
                     val notificationsList = response.body()
-                    notificationsList?.let {
-                        setupRecyclerView(it)
-                    } ?: run {
-                        setupRecyclerView(emptyList())
-                    }
+                    setupRecyclerView(notificationsList ?: emptyList())
                 } else {
                     setupRecyclerView(emptyList())
                 }
             } catch (e: Exception) {
-                if (_binding != null) {
-                    setupRecyclerView(emptyList())
-                }
+                if (_binding != null) setupRecyclerView(emptyList())
             } finally {
-                if (_binding != null) {
-                    showLoading(false)
-                }
+                if (_binding != null) showLoading(false)
             }
         }
     }
 
     private fun setupRecyclerView(data: List<Notification>) {
         if (_binding == null) return
-
         val recyclerView = binding.notificationRecycler
-
         if (recyclerView.adapter == null) {
             notificationAdapter = NotificationAdapter(items = data)
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -289,13 +242,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
 
     private fun updateMetersDisplay(fuelLevel: Int, loadMotor: Int, speed: Int) {
         if (_binding == null) return
-
         binding.progressBarFuel.progress = fuelLevel
         binding.fuelStatus.text = "$fuelLevel% / 100"
-
         binding.progressBarLoadMotor.progress = loadMotor
         binding.loadMotorStatus.text = "$loadMotor% / 100"
-
         binding.progressBarSpeed.progress = speed
         binding.speedStats.text = "$speed / 200"
     }
@@ -322,25 +272,20 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
             setupMapAndLocation()
             getLastKnownLocationAndUpdateUI()
         } else {
-            locationPermissionRequest.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
+            locationPermissionRequest.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
         }
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-
-        googleMap.uiSettings.isScrollGesturesEnabled = false
-        googleMap.uiSettings.isZoomGesturesEnabled = false
-        googleMap.uiSettings.isTiltGesturesEnabled = false
-        googleMap.uiSettings.isRotateGesturesEnabled = false
-        googleMap.uiSettings.isZoomControlsEnabled = false
-        googleMap.uiSettings.isMapToolbarEnabled = false
-
+        googleMap.uiSettings.apply {
+            isScrollGesturesEnabled = false
+            isZoomGesturesEnabled = false
+            isTiltGesturesEnabled = false
+            isRotateGesturesEnabled = false
+            isZoomControlsEnabled = false
+            isMapToolbarEnabled = false
+        }
         requestLocationPermissions()
     }
 
@@ -350,14 +295,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
             Toast.makeText(requireContext(), getString(R.string.permission_denied), Toast.LENGTH_SHORT).show()
             return
         }
-
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
             location?.let {
                 val mapDialog = MapDialogFragment.newInstance(it.latitude, it.longitude)
                 mapDialog.show(childFragmentManager, MapDialogFragment.TAG)
-            } ?: run {
-                Toast.makeText(requireContext(), getString(R.string.location_not_available), Toast.LENGTH_SHORT).show()
-            }
+            } ?: Toast.makeText(requireContext(), getString(R.string.location_not_available), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -372,11 +314,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
             .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
             .build()
 
-        val locationWorkRequest = PeriodicWorkRequest.Builder(
-            LocationTrackingWorker::class.java,
-            15,
-            TimeUnit.MINUTES
-        )
+        val locationWorkRequest = PeriodicWorkRequest.Builder(LocationTrackingWorker::class.java, 15, TimeUnit.MINUTES)
             .setConstraints(constraints)
             .addTag(LocationTrackingWorker.WORK_TAG)
             .build()
@@ -397,31 +335,25 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
             .addOnSuccessListener { document ->
                 if (!isAdded) return@addOnSuccessListener
                 showLoading(false)
-
                 if (document.exists()) {
                     val name = document.getString("name") ?: getString(R.string.data_not_found)
                     val carModel = document.getString("carModel") ?: getString(R.string.data_not_found)
                     val carPlate = document.getString("carPlate") ?: getString(R.string.data_not_found)
-
                     val truckId = document.getLong("truckId")?.toInt()
                     val idMapsFromFirestore = document.getLong("idMaps")?.toInt()
 
                     if (truckId != null && truckId > 0 && idMapsFromFirestore != null && idMapsFromFirestore > 0) {
                         (activity as? MainActivity)?.truckId = truckId
-
                         with(sharedPref.edit()) {
                             putInt("TRUCK_ID", truckId)
                             putInt("ID_MAPS", idMapsFromFirestore)
                             apply()
                         }
-
                         startLocationTrackingWorker()
-
                         fetchRoutes(truckId)
                         fetchMeters(truckId)
                         fetchNotifications(truckId)
                     }
-
                     updateDriverDetailsDisplay(name, carModel, carPlate)
                 } else {
                     updateDriverDetailsDisplay(
@@ -431,16 +363,15 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
                     )
                 }
             }
-            .addOnFailureListener {
+            .addOnFailureListener { exception ->
                 if (!isAdded) return@addOnFailureListener
                 showLoading(false)
-
                 updateDriverDetailsDisplay(
                     getString(R.string.loading_error),
                     getString(R.string.loading_error),
                     getString(R.string.loading_error)
                 )
-                Log.e("HomeFragment", "Failed to fetch driver details", it)
+                Log.e("HomeFragment", "Failed to fetch driver details", exception)
             }
     }
 
@@ -448,14 +379,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     private fun setupMapAndLocation() {
         if (!isPermissionGranted) return
-
         googleMap.isMyLocationEnabled = true
-
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             location?.let {
                 val latLng = LatLng(it.latitude, it.longitude)
                 val truckIcon = bitmapDescriptorFromVector(requireContext(), R.drawable.home_pin)
-
                 googleMap.clear()
                 googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12f))
                 googleMap.addMarker(
@@ -472,14 +400,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     private fun getLastKnownLocationAndUpdateUI() {
         if (!isPermissionGranted) return
-
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             location?.let {
                 getCityFromLocation(it)
                 setupMapAndLocation()
-            } ?: run {
-                Toast.makeText(requireContext(), getString(R.string.location_not_available), Toast.LENGTH_SHORT).show()
-            }
+            } ?: Toast.makeText(requireContext(), getString(R.string.location_not_available), Toast.LENGTH_SHORT).show()
         }.addOnFailureListener {
             Toast.makeText(requireContext(), getString(R.string.location_failed), Toast.LENGTH_SHORT).show()
         }
@@ -488,15 +413,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback, RoutesDialogFragment.RouteU
     @Suppress("DEPRECATION")
     private fun getCityFromLocation(location: Location) {
         val geocoder = Geocoder(requireContext(), Locale("pt", "BR"))
-
         try {
             val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-
             if (!addresses.isNullOrEmpty()) {
                 val address = addresses[0]
                 val city = address.locality ?: address.subAdminArea ?: address.adminArea
                 val state = address.adminArea ?: ""
-
                 binding.approximateLocation.text = String.format(getString(R.string.currently_at), "$city, $state")
             } else {
                 binding.approximateLocation.text = getString(R.string.location_unknown)

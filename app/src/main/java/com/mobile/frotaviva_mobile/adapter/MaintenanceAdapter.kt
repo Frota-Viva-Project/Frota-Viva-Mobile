@@ -30,9 +30,16 @@ class MaintenanceAdapter (
     override fun onBindViewHolder(holder: MaintenanceViewHolder, position: Int) {
         val maintenance = items[position]
 
+        val statusText = when (maintenance.status) {
+            "CONCLUIDO" -> "Manutenção Concluida"
+            "SERVICO;" -> "Serviço Solicitado"
+            "PENDENTE" -> "Manutenção Pendente"
+            else -> maintenance.status
+        }
+
         holder.binding.manTitulo.text = maintenance.titulo
         holder.binding.manInfo.text = maintenance.info
-        holder.binding.manStatus.text = maintenance.status
+        holder.binding.manStatus.text = statusText
 
         val isDone = maintenance.status == "CONCLUIDO"
 
