@@ -86,4 +86,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("com.cloudinary:cloudinary-android:2.4.0")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }
