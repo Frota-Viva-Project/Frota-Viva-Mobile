@@ -223,6 +223,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_manutencoes -> binding.navbarInclude.bottomNavigation.selectedItemId = R.id.nav_manutencoes
             R.id.nav_perfil -> startActivity(Intent(this, Profile::class.java))
             R.id.nav_ajuda -> startActivity(Intent(this, HelpActivity::class.java))
+            R.id.nav_chatbot -> startActivity(Intent(this, ChatBotActivity::class.java))
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
         return true

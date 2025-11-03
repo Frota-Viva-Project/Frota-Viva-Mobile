@@ -98,6 +98,9 @@
         <activity
             android:name=".VerifyInfoActivity"
             android:exported="false" />
+        <activity
+            android:name=".ChatBotActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

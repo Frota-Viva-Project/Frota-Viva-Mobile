@@ -19,12 +19,18 @@
             android:id="@+id/nav_perfil"
             android:icon="@drawable/edit_profile_image"
             android:title="Perfil" />
+
+        <item
+            android:id="@+id/nav_chatbot"
+            android:icon="@drawable/chat"
+            android:title="ChatBot" />
     </group>
 
     <group
         android:checkableBehavior="single"
         android:id="@+id/group_secondary"
         >
+
         <item
             android:id="@+id/nav_ajuda"
             android:icon="@drawable/help"

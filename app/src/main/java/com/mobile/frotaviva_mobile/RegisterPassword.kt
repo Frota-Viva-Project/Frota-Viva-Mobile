@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseUser
 import com.mobile.frotaviva_mobile.api.RetrofitClient
@@ -34,6 +36,10 @@ class RegisterPassword : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterPasswordBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        window.statusBarColor = ContextCompat.getColor(this, R.color.primary_default)
+        ViewCompat.getWindowInsetsController(window.decorView)
+            ?.isAppearanceLightStatusBars = false
 
         firebaseManager = FirebaseManager()
         secureStorage = SecureStorage(this)

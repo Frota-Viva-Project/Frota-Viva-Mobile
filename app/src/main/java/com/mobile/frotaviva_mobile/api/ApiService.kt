@@ -5,6 +5,8 @@ import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 import com.mobile.frotaviva_mobile.model.Maintenance
 import com.mobile.frotaviva_mobile.model.Alert
 import com.mobile.frotaviva_mobile.model.AlertRequest
+import com.mobile.frotaviva_mobile.model.ChatRequest
+import com.mobile.frotaviva_mobile.model.ChatResponse
 import com.mobile.frotaviva_mobile.model.DriverRequest
 import com.mobile.frotaviva_mobile.model.LocationUpdateRequest
 import com.mobile.frotaviva_mobile.model.MaintenanceRequest
@@ -16,6 +18,7 @@ import com.mobile.frotaviva_mobile.model.TruckResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -112,4 +115,14 @@ interface ApiService {
 
     @GET("fcm/history/{userId}")
     suspend fun getNotificationHistory(@Path("userId") userId: Int): Response<List<Notification>>
+
+    @POST("chat")
+    suspend fun sendMessageToChatbot(
+        @Body request: ChatRequest,
+        @Header("X-API-KEY") apiKey: String = "AIzaSyCf0Fcpf434Vz1-W9A8dqDu6yjxFzhaSCA"
+    ): Response<ChatResponse>
+
+    @POST("/message")
+    suspend fun sendMessage(@Body body: Map<String, String>): Map<String, String>
+
 }
