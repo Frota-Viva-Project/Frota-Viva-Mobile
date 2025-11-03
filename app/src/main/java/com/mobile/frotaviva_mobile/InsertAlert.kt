@@ -98,14 +98,18 @@ class InsertAlert : AppCompatActivity(), CoroutineScope {
     }
 
     private fun sendAlertToBackend(alert: AlertRequest) {
-        val truckIdFromBundle = intent.getIntExtra(TRUCK_ID_KEY, 0)
+        val truckIdFromIntent = intent.getIntExtra(TRUCK_ID_KEY, 0)
+        if (truckIdFromIntent == 0) {
+            Toast.makeText(this, "Caminhão não encontrado", Toast.LENGTH_SHORT).show()
+            return
+        }
         binding.progressBar3.visibility = View.VISIBLE
         binding.buttonSendAlert.isEnabled = false
 
         launch {
             try {
                 val response = withContext(Dispatchers.IO) {
-                    RetrofitClient.instance.sendAlert(truckIdFromBundle, alert)
+                    RetrofitClient.instance.sendAlert(truckIdFromIntent, alert)
                 }
                 if (response.isSuccessful) {
                     val resultIntent = Intent().apply {

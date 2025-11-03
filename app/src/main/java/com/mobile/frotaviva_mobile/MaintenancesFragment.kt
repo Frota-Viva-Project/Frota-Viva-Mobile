@@ -46,9 +46,7 @@ class MaintenancesFragment : Fragment() {
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val data = result.data
-            val shouldReload = data?.getBooleanExtra(RELOAD_KEY, false) ?: false
-
+            val shouldReload = result.data?.getBooleanExtra(RELOAD_KEY, false) ?: false
             if (shouldReload) {
                 fetchTruckIdAndLoadData()
                 Toast.makeText(requireContext(), "Lista de manutenções atualizada.", Toast.LENGTH_SHORT).show()
@@ -61,10 +59,17 @@ class MaintenancesFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentMaintenancesBinding.inflate(inflater, container, false)
+
         binding.buttonAddMaintenance.setOnClickListener {
-            val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
+            // Pega o truckId do SecureStorage
+            val truckId = secureStorage.getTruckId()
+            if (truckId == null || truckId <= 0) {
+                Toast.makeText(requireContext(), "ID do caminhão não encontrado.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             val intent = Intent(requireContext(), InsertMaintenance::class.java).apply {
-                putExtra(TRUCK_ID_KEY, truckIdFromBundle)
+                putExtra(TRUCK_ID_KEY, truckId)
             }
             insertMaintenanceLauncher.launch(intent)
         }
@@ -82,7 +87,6 @@ class MaintenancesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         auth = FirebaseAuth.getInstance()
         secureStorage = SecureStorage(requireContext())
 
@@ -100,20 +104,13 @@ class MaintenancesFragment : Fragment() {
 
     private fun isUserAuthenticated(): Boolean {
         val token = secureStorage.getToken()
-
-        if (!token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token)) {
-            return true
-        }
-
-        return auth.currentUser != null
+        return !token.isNullOrEmpty() && !JwtUtils.isTokenExpired(token) || auth.currentUser != null
     }
 
     private fun redirectToLogin() {
         Toast.makeText(requireContext(), "Sessão expirada. Faça login novamente.", Toast.LENGTH_LONG).show()
-
         secureStorage.clearToken()
         auth.signOut()
-
         val intent = Intent(requireContext(), Login::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -122,22 +119,14 @@ class MaintenancesFragment : Fragment() {
     }
 
     private fun showLoading(isLoading: Boolean) {
-        if (_binding == null) return
-
-        if (isLoading) {
-            binding.progressBar.visibility = View.VISIBLE
-            binding.maintenancesRecyclerView.visibility = View.GONE
-        } else {
-            binding.progressBar.visibility = View.GONE
-            binding.maintenancesRecyclerView.visibility = View.VISIBLE
-        }
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.maintenancesRecyclerView.visibility = if (isLoading) View.GONE else View.VISIBLE
     }
 
     private fun fetchTruckIdAndLoadData() {
-        val truckIdFromBundle = arguments?.getInt(TRUCK_ID_KEY, 0)
-
-        if (truckIdFromBundle != null && truckIdFromBundle > 0) {
-            fetchMaintenances(truckIdFromBundle)
+        val truckIdFromStorage = secureStorage.getTruckId()
+        if (truckIdFromStorage != null && truckIdFromStorage > 0) {
+            fetchMaintenances(truckIdFromStorage)
             return
         }
 
@@ -155,12 +144,10 @@ class MaintenancesFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 val snapshot = db.collection("driver").document(userId).get().await()
-
                 if (!isAdded) return@launch
 
                 if (snapshot.exists()) {
                     val truckId = snapshot.getLong("truckId")?.toInt() ?: 0
-
                     if (truckId > 0) {
                         fetchMaintenances(truckId)
                     } else {
@@ -174,52 +161,45 @@ class MaintenancesFragment : Fragment() {
                     showLoading(false)
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-                if (_binding != null) {
-                    setupRecyclerView(emptyList())
-                    showLoading(false)
-                }
+                if (isAdded) Toast.makeText(requireContext(), "Erro ao buscar motorista: ${e.message}", Toast.LENGTH_LONG).show()
+                setupRecyclerView(emptyList())
+                showLoading(false)
             }
         }
     }
 
     private fun fetchMaintenances(truckId: Int) {
         showLoading(true)
-
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.getMaintenances(truckId)
-
                 if (!isAdded) return@launch
 
-                if (response.isSuccessful) {
-                    val maintenancesList = response.body()
-
-                    maintenancesList?.let {
-                        originalData = it.sortedByDescending { maintenance -> maintenance.id }
-                        setupRecyclerView(originalData)
-
-                    } ?: run {
+                when {
+                    response.isSuccessful -> {
+                        val maintenancesList = response.body()
+                        if (!maintenancesList.isNullOrEmpty()) {
+                            originalData = maintenancesList.sortedByDescending { it.id }
+                            setupRecyclerView(originalData)
+                        } else {
+                            setupRecyclerView(emptyList())
+                            Toast.makeText(requireContext(), "Nenhuma manutenção encontrada.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    response.code() == 404 -> {
                         setupRecyclerView(emptyList())
                         Toast.makeText(requireContext(), "Nenhuma manutenção encontrada.", Toast.LENGTH_SHORT).show()
                     }
-                } else {
-                    Toast.makeText(requireContext(), "Erro ao carregar manutenções: ${response.code()}", Toast.LENGTH_LONG).show()
-                    setupRecyclerView(emptyList())
+                    else -> {
+                        setupRecyclerView(emptyList())
+                        Toast.makeText(requireContext(), "Erro ao carregar manutenções: ${response.code()}", Toast.LENGTH_LONG).show()
+                    }
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-                if (_binding != null) {
-                    setupRecyclerView(emptyList())
-                }
+                if (isAdded) Toast.makeText(requireContext(), "Erro de conexão/API: ${e.message}", Toast.LENGTH_LONG).show()
+                setupRecyclerView(emptyList())
             } finally {
-                if (_binding != null) {
-                    showLoading(false)
-                }
+                showLoading(false)
             }
         }
     }
@@ -229,11 +209,9 @@ class MaintenancesFragment : Fragment() {
             Toast.makeText(requireContext(), "ID do caminhão não disponível.", Toast.LENGTH_SHORT).show()
             return
         }
-
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.markMaintenanceAsDone(truckId, maintenanceId)
-
                 if (!isAdded) return@launch
 
                 if (response.isSuccessful) {
@@ -243,9 +221,7 @@ class MaintenancesFragment : Fragment() {
                     Toast.makeText(requireContext(), "Falha ao finalizar manutenção: ${response.code()}", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão ao finalizar manutenção: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                if (isAdded) Toast.makeText(requireContext(), "Erro de conexão ao finalizar manutenção: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -255,40 +231,29 @@ class MaintenancesFragment : Fragment() {
             Toast.makeText(requireContext(), "ID do caminhão não disponível.", Toast.LENGTH_SHORT).show()
             return
         }
-
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.askServiceForMaintenance(truckId, maintenanceId)
-
                 if (!isAdded) return@launch
 
                 if (response.isSuccessful) {
                     Toast.makeText(requireContext(), "Serviço solicitado com sucesso! A empresa entrará em contato", Toast.LENGTH_LONG).show()
                     fetchMaintenances(truckId)
                 } else {
-                    Toast.makeText(requireContext(), "Falha ao solicitar serviço pra manutenção: ${response.code()}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), "Falha ao solicitar serviço: ${response.code()}", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                if (isAdded) {
-                    Toast.makeText(requireContext(), "Erro de conexão ao solicitar serviço pra manutenção: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                if (isAdded) Toast.makeText(requireContext(), "Erro de conexão ao solicitar serviço: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     private fun setupRecyclerView(data: List<Maintenance>) {
-        if (_binding == null) return
-
         val recyclerView = binding.maintenancesRecyclerView
-        val truckId = arguments?.getInt(TRUCK_ID_KEY, 0) ?: 0
+        val truckId = secureStorage.getTruckId() ?: 0
 
-        val onDoneCallback: (Int) -> Unit = { maintenanceId ->
-            markMaintenanceAsDone(truckId, maintenanceId)
-        }
-
-        val onServiceAskedCallback: (Int) -> Unit = { maintenanceId ->
-            askForService(truckId, maintenanceId)
-        }
+        val onDoneCallback: (Int) -> Unit = { maintenanceId -> markMaintenanceAsDone(truckId, maintenanceId) }
+        val onServiceAskedCallback: (Int) -> Unit = { maintenanceId -> askForService(truckId, maintenanceId) }
 
         if (recyclerView.adapter == null) {
             maintenanceAdapter = MaintenanceAdapter(
@@ -296,7 +261,6 @@ class MaintenancesFragment : Fragment() {
                 onMaintenanceDone = onDoneCallback,
                 onServiceAsked = onServiceAskedCallback
             )
-
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
             recyclerView.addItemDecoration(VerticalSpaceItemDecoration(dpToPx(24)))
             recyclerView.adapter = maintenanceAdapter
@@ -306,16 +270,9 @@ class MaintenancesFragment : Fragment() {
     }
 
     private fun filter(text: String) {
-        val filteredList: MutableList<Maintenance> = mutableListOf()
-        val query = text.lowercase()
-
-        for (item in originalData) {
-            if (item.titulo.lowercase().contains(query) ||
-                item.info.lowercase().contains(query)) {
-                filteredList.add(item)
-            }
+        val filteredList = originalData.filter {
+            it.titulo.lowercase().contains(text) || it.info.lowercase().contains(text)
         }
-
         maintenanceAdapter.updateData(filteredList)
     }
 

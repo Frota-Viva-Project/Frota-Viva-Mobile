@@ -7,7 +7,10 @@ import androidx.security.crypto.MasterKeys
 import android.util.Log
 
 class SecureStorage(private val context: Context) {
+
     private val PREF_KEY_JWT = "app_jwt_token"
+    private val PREF_KEY_TRUCK_ID = "truck_id"
+    private val PREF_KEY_USER_ID = "user_id"
     private val PREF_FILE_NAME = "secure_prefs"
 
     private val encryptedPrefs: SharedPreferences by lazy {
@@ -27,6 +30,7 @@ class SecureStorage(private val context: Context) {
         }
     }
 
+    // JWT
     fun saveToken(token: String) {
         encryptedPrefs.edit()
             .putString(PREF_KEY_JWT, token)
@@ -43,5 +47,45 @@ class SecureStorage(private val context: Context) {
             .remove(PREF_KEY_JWT)
             .apply()
         Log.d("SecureStorage", "JWT removido.")
+    }
+
+    // Truck ID
+    fun saveTruckId(id: Int) {
+        encryptedPrefs.edit()
+            .putInt(PREF_KEY_TRUCK_ID, id)
+            .apply()
+        Log.d("SecureStorage", "Truck ID $id salvo com sucesso.")
+    }
+
+    fun getTruckId(): Int? {
+        val id = encryptedPrefs.getInt(PREF_KEY_TRUCK_ID, -1)
+        return if (id > 0) id else null
+    }
+
+    fun clearTruckId() {
+        encryptedPrefs.edit()
+            .remove(PREF_KEY_TRUCK_ID)
+            .apply()
+        Log.d("SecureStorage", "Truck ID removido.")
+    }
+
+    // User ID
+    fun saveUserId(id: Int) {
+        encryptedPrefs.edit()
+            .putInt(PREF_KEY_USER_ID, id)
+            .apply()
+        Log.d("SecureStorage", "User ID $id salvo com sucesso.")
+    }
+
+    fun getUserId(): Int? {
+        val id = encryptedPrefs.getInt(PREF_KEY_USER_ID, -1)
+        return if (id > 0) id else null
+    }
+
+    fun clearUserId() {
+        encryptedPrefs.edit()
+            .remove(PREF_KEY_USER_ID)
+            .apply()
+        Log.d("SecureStorage", "User ID removido.")
     }
 }

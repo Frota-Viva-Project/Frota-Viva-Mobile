@@ -12,34 +12,46 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
     private const val BASE_URL = "https://api-postgresql-kr87.onrender.com/v1/api/"
+    private const val BASE_CHAT_URL = "https://chatbot-api-xung.onrender.com"
 
     @Volatile
     private lateinit var apiServiceInstance: ApiService
 
+    @Volatile
+    private lateinit var chatBotServiceInstance: ApiService
+
+    private lateinit var sharedOkHttpClient: OkHttpClient
+
     fun initialize(context: Context) {
-        if (::apiServiceInstance.isInitialized) {
-            return
-        }
+        if (::apiServiceInstance.isInitialized && ::chatBotServiceInstance.isInitialized) return
 
         val secureStorage = SecureStorage(context.applicationContext)
-
         val authInterceptor = AuthInterceptor(secureStorage)
 
-        val okHttpClient = OkHttpClient.Builder()
+        sharedOkHttpClient = OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
-            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
-            .connectTimeout(120, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(120, TimeUnit.SECONDS)
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
+            .connectTimeout(500, TimeUnit.SECONDS)
+            .readTimeout(500, TimeUnit.SECONDS)
+            .writeTimeout(500, TimeUnit.SECONDS)
             .build()
 
-        val retrofit = Retrofit.Builder()
+        val retrofitMain = Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(okHttpClient)
+            .client(sharedOkHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
-        apiServiceInstance = retrofit.create(ApiService::class.java)
+        val retrofitChatbot = Retrofit.Builder()
+            .baseUrl(BASE_CHAT_URL)
+            .client(sharedOkHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        apiServiceInstance = retrofitMain.create(ApiService::class.java)
+        chatBotServiceInstance = retrofitChatbot.create(ApiService::class.java)
     }
 
     val instance: ApiService
@@ -48,5 +60,13 @@ object RetrofitClient {
                 "RetrofitClient não foi inicializado. Chame RetrofitClient.initialize(context) primeiro."
             }
             return apiServiceInstance
+        }
+
+    val chatbotInstance: ApiService
+        get() {
+            check(::chatBotServiceInstance.isInitialized) {
+                "RetrofitClient não foi inicializado. Chame RetrofitClient.initialize(context) primeiro."
+            }
+            return chatBotServiceInstance
         }
 }

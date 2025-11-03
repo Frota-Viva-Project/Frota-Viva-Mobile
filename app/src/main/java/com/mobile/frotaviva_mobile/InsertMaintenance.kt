@@ -54,14 +54,19 @@ class InsertMaintenance : AppCompatActivity(), CoroutineScope {
     }
 
     private fun sendMaintenanceToBackend(maintenance: MaintenanceRequest) {
-        val truckIdFromBundle = intent.getIntExtra(TRUCK_ID_KEY, 0)
+        val truckIdFromIntent = intent.getIntExtra(InsertAlert.Companion.TRUCK_ID_KEY, 0)
+        if (truckIdFromIntent == 0) {
+            Toast.makeText(this, "Caminhão não encontrado", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         binding.progressBar.visibility = View.VISIBLE
         binding.buttonSendMaintenance.isEnabled = false
 
         launch {
             try {
                 val response = withContext(Dispatchers.IO) {
-                    RetrofitClient.instance.sendMaintenance(truckIdFromBundle, maintenance)
+                    RetrofitClient.instance.sendMaintenance(truckIdFromIntent, maintenance)
                 }
                 if (response.isSuccessful) {
                     val resultIntent = Intent().apply {

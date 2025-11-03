@@ -4,40 +4,60 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.lifecycle.lifecycleScope
+import com.google.firebase.auth.FirebaseUser
+import com.mobile.frotaviva_mobile.api.RetrofitClient
+import com.mobile.frotaviva_mobile.auth.TokenExchangeRequest
 import com.mobile.frotaviva_mobile.databinding.ActivityRegisterPasswordBinding
 import com.mobile.frotaviva_mobile.firebase.FirebaseManager
+import com.mobile.frotaviva_mobile.model.DriverRequest
+import com.mobile.frotaviva_mobile.storage.SecureStorage
+import kotlinx.coroutines.launch
 
 class RegisterPassword : AppCompatActivity() {
-    private lateinit var firebaseManager: FirebaseManager
+
     private lateinit var binding: ActivityRegisterPasswordBinding
+    private lateinit var firebaseManager: FirebaseManager
+    private lateinit var secureStorage: SecureStorage
+
+    private var email: String? = null
+    private var name: String? = null
+    private var phone: String? = null
+    private var enterpriseCode: String? = null
+    private var carModel: String? = null
+    private var carPlate: String? = null
+    private var capacity: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterPasswordBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        window.statusBarColor = ContextCompat.getColor(this, R.color.primary_default)
+        ViewCompat.getWindowInsetsController(window.decorView)
+            ?.isAppearanceLightStatusBars = false
+
         firebaseManager = FirebaseManager()
+        secureStorage = SecureStorage(this)
 
-            val receivedBundle = intent.extras
-        val name = receivedBundle?.getString("name") ?: ""
-        val email = receivedBundle?.getString("email") ?: ""
-        val phone = receivedBundle?.getString("phone") ?: ""
-        val carPlate = receivedBundle?.getString("car_plate") ?: ""
-        val enterpriseCode = receivedBundle?.getString("enterprise_code") ?: ""
-
-        binding.buttonGoBack.setOnClickListener {
-            finish()
-        }
+        email = intent.getStringExtra("email")
+        name = intent.getStringExtra("name")
+        phone = intent.getStringExtra("phone")
+        enterpriseCode = intent.getStringExtra("enterprise_code")
+        carModel = intent.getStringExtra("car_model")
+        carPlate = intent.getStringExtra("car_plate")
+        capacity = intent.getIntExtra("capacity", 0)
 
         binding.buttonContinueRegister.setOnClickListener {
-            val password = binding.editTextPasswordRegister.text.toString()
-            val confirmPassword = binding.editTextConfirmPasswordRegister.text.toString()
+            val password = binding.editTextPasswordRegister.text.toString().trim()
+            val confirmPassword = binding.editTextConfirmPasswordRegister.text.toString().trim()
 
             if (password.isEmpty() || confirmPassword.isEmpty()) {
-                Toast.makeText(this, "Preencha a senha e a confirmação.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Preencha todos os campos.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -46,63 +66,104 @@ class RegisterPassword : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            registerUser(name, email, phone, carPlate, enterpriseCode, password)
+            registerUser(password)
         }
     }
 
-    private fun registerUser(name: String, email: String, phone: String, carPlate: String, enterpriseCode: String, password: String) {
-        firebaseManager.registerUser(email, password,
-            onSuccess = {
-                updateProfileAndSaveData(name, email, phone, carPlate, enterpriseCode)
+    private fun registerUser(password: String) {
+        val userEmail = email ?: return
+        val userName = name ?: return
+        val userPhone = phone ?: return
+        val userEnterpriseCode = enterpriseCode ?: return
+
+        firebaseManager.registerUser(
+            email = userEmail,
+            password = password,
+            name = userName,
+            phone = userPhone,
+            enterpriseCode = userEnterpriseCode,
+            truckId = 0,
+            carModel = carModel ?: "",
+            carPlate = carPlate ?: "",
+            photoUrl = "",
+            onSuccess = { firebaseUser ->
+                Toast.makeText(this, "Usuário criado no Firebase!", Toast.LENGTH_SHORT).show()
+                getFirebaseTokenAndExchange(firebaseUser)
             },
-            onFailure = {
-                Toast.makeText(this, "Falha no cadastro: Usuário já existe ou senha fraca.", Toast.LENGTH_LONG).show()
+            onFailure = { exception ->
+                Toast.makeText(this, "Erro ao registrar: ${exception.message}", Toast.LENGTH_LONG).show()
             }
         )
     }
 
-    private fun updateProfileAndSaveData(name: String, email: String, phone: String, carPlate: String, enterpriseCode: String) {
-        firebaseManager.updateUserProfile(name,
-            onSuccess = {
-                saveUserData(name, email, phone, carPlate, enterpriseCode)
-            },
-            onFailure = {
-                Toast.makeText(this, "Erro ao salvar nome de perfil.", Toast.LENGTH_SHORT).show()
-                saveUserData(name, email, phone, carPlate, enterpriseCode)
+    private fun getFirebaseTokenAndExchange(firebaseUser: FirebaseUser) {
+        firebaseUser.getIdToken(true)
+            .addOnSuccessListener { result ->
+                val firebaseIdToken = result.token
+                if (firebaseIdToken != null) {
+                    exchangeTokenWithBackend(firebaseUser, firebaseIdToken)
+                } else {
+                    Toast.makeText(this, "Erro ao gerar token do Firebase.", Toast.LENGTH_LONG).show()
+                }
             }
-        )
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Falha ao pegar token: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            }
     }
 
-    private fun saveUserData(name: String, email: String, phone: String, carPlate: String, enterpriseCode: String) {
-        val uid = Firebase.auth.currentUser?.uid
+    private fun exchangeTokenWithBackend(firebaseUser: FirebaseUser, firebaseIdToken: String) {
+        lifecycleScope.launch {
+            try {
+                val authService = RetrofitClient.instance
+                val request = TokenExchangeRequest(firebaseIdToken = firebaseIdToken)
 
-        if (uid != null) {
-            val user = hashMapOf(
-                "name" to name,
-                "email" to email,
-                "phone" to phone,
-                "carPlate" to carPlate,
-                "enterpriseCode" to enterpriseCode
-            )
-            Firebase.firestore.collection("driver").document(uid)
-                .set(user)
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Cadastro concluído com sucesso!", Toast.LENGTH_LONG).show()
-                    // 3. Redireciona para a tela principal
-                    redirectToMain()
+                val response = authService.exchangeFirebaseToken(request)
+                if (response.isSuccessful && response.body() != null) {
+                    val jwtToken = response.body()!!.token
+                    secureStorage.saveToken(jwtToken)
+
+                    val driverRequest = DriverRequest(
+                        placa = carPlate ?: "",
+                        modelo = carModel ?: "",
+                        capacidade = capacity ?: 0
+                    )
+
+                    val motoristaResponse = authService.linkDriver(
+                        codEmpresa = enterpriseCode ?: "",
+                        request = driverRequest
+                    )
+
+                    if (motoristaResponse.isSuccessful && motoristaResponse.body() != null) {
+                        val motorista = motoristaResponse.body()!!
+                        val userId = motorista.motorista.id
+                        val truckId = motorista.id
+
+                        secureStorage.saveUserId(userId)
+                        secureStorage.saveTruckId(truckId)
+
+                        firebaseManager.updateUserIds(firebaseUser.uid, userId, truckId)
+
+                        Toast.makeText(this@RegisterPassword, "Registro concluído!", Toast.LENGTH_SHORT).show()
+                        redirectToMain()
+                    } else {
+                        Toast.makeText(
+                            this@RegisterPassword,
+                            "Erro ao vincular motorista (${motoristaResponse.code()}).",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                } else {
+                    Toast.makeText(this@RegisterPassword, "Erro ao trocar token com o servidor.", Toast.LENGTH_LONG).show()
                 }
-                .addOnFailureListener {
-                    Toast.makeText(this, "Erro ao salvar dados do motorista.", Toast.LENGTH_LONG).show()
-                }
-        } else {
-            Toast.makeText(this, "Erro: UID do usuário ausente.", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@RegisterPassword, "Erro de conexão: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            }
         }
     }
+
     private fun redirectToMain() {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
-        finish()
     }
 }
