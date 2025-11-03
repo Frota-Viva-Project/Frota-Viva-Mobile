@@ -101,7 +101,7 @@ interface ApiService {
         @Query("id_alerta") idAlerta: Int
     ): Response<Unit>
 
-    @POST("motorista")
+    @POST("motorista/{id_motorista}")
     suspend fun linkDriver(
         @Query("cod_empresa") codEmpresa: String,
         @Body request: DriverRequest

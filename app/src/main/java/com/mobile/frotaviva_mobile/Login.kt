@@ -2,7 +2,6 @@ package com.mobile.frotaviva_mobile
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -99,18 +98,16 @@ class Login : AppCompatActivity() {
                     val yourJwt = response.body()!!.token
                     secureStorage.saveToken(yourJwt)
 
-                    // Agora buscamos truckId e userId diretamente do Firestore
                     Firebase.firestore.collection("driver").document(uid)
                         .get()
                         .addOnSuccessListener { document ->
                             if (document != null && document.exists()) {
-                                val truckId = (document.getLong("truckId") ?: 0).toInt()
+                                val truckId = (document.getLong("backendTruckId") ?: 0).toInt()
                                 val userId = (document.getLong("userId") ?: 0).toInt()
 
                                 if (truckId > 0 && userId > 0) {
                                     secureStorage.saveTruckId(truckId)
                                     secureStorage.saveUserId(userId)
-                                    Log.d("LoginDebug", "Truck ID: $truckId, User ID: $userId salvos.")
                                     redirectToMain()
                                 } else {
                                     Toast.makeText(this@Login, "Truck ID ou User ID não encontrado.", Toast.LENGTH_SHORT).show()
